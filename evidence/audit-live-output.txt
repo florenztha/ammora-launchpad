@@ -1,0 +1,117 @@
+
+=== 1. NETWORK PANEL ===
+chainId (expect 91342): 91342
+block A: 42063232n
+block B (7s later, auto-refresh source advances): 42063239n
+block advanced: true
+bytecode at factory 0x35353a2Dab7426EcCAe6f5FB267702a542ab68fA: true
+bytecode at configRegistry 0x6d043014972b87406C4757a5f2d655A24e0b0aF9: true
+bytecode at firstBuyExecutor 0x1a19a3b0e69b33db3a2f9b2487866b4be04dd451: true
+bytecode at nativeRouter 0xade9E6dEF440E05640ed07c4a701C238B9FB66a8: true
+bytecode at executionRegistry 0x3CDD7cC246Cc49aEa779E5E589Bd175251617626: true
+bytecode at tokenLockFactory 0x191E814b1f4a6A66377775477671E7890c9Da799: true
+bytecode at curveQuoteAsset/WETH 0x4200000000000000000000000000000000000006: true
+catalog slot: v4-auto-route-20260917
+catalog protocol version: 4
+atomic nativeAsset.kind (expect WRAPPED_ERC20): WRAPPED_ERC20
+atomic quoteAsset.symbol (expect WETH): WETH
+registry nextConfigId: 82n
+
+=== 3. CONFIG SELECTION ===
+qualified configs (site filter: enabled && migrationBaseThreshold==0 && id!=6): [
+ "1",
+ "2",
+ "3",
+ "4",
+ "5",
+ "10",
+ "11",
+ "36",
+ "41",
+ "48",
+ "50",
+ "76",
+ "78"
+]
+config 6 enabled: false
+config 6 hash matches docs-quarantined hash: true
+config 6 migrationBaseThreshold: 0n
+all qualified tokenDecimals (from chain): [
+ 9
+]
+all qualified quoteToken == WETH: true
+
+=== 2. LATEST LAUNCHES ===
+launches found by site scan algorithm: 6
+launch token 0xFDea69A88142d81B498244D0D5871B70B1498b6b curve 0xAe572164c13BA1b46F413E48475fFdA8823b0A95 config #67 block 42029728 status: 3
+launch token 0xeBF001a035669bca6115919dFb2aef65619C2eC6 curve 0x6B9C77E553b348b193eF3eC15797DD7f1E3EC74e config #67 block 42028971 status: 1
+launch token 0x180a0BF9039aBE7b7A06b1B03D551cC808502069 curve 0x6C6870170C601D48CF3Ee581C02DE5262E38e9e7 config #67 block 42028734 status: 1
+launch token 0x7fbF0Cc64b70E2128887a0EACF35b71FE725D920 curve 0x41bFB09eA2657148185159d0905D6CC43B18beD1 config #67 block 42028613 status: 1
+launch token 0x1aCc369390DC1D7609Da7BF04Ed494d53E844e66 curve 0x080320Bb70f7fFC66fC289aA02FE6f46c595B528 config #67 block 42028308 status: 1
+launch token 0xBE604DDf3BAfB279F0D53F12c70cbe9a0d0cAb40 curve 0xD4aB6c5Cf8fF58E129c2e5d7401017964aa1f02f config #67 block 42027331 status: 3
+first active curve (site prefills quote panel with it): 0x6B9C77E553b348b193eF3eC15797DD7f1E3EC74e
+a graduated curve found: 0xAe572164c13BA1b46F413E48475fFdA8823b0A95
+
+=== 5. QUOTE PANEL ===
+active curve base token decimals (read from chain): 9
+active curve state: {
+ "status": 1,
+ "configId": "67",
+ "feeBps": 100,
+ "quoteToken": "0x4200000000000000000000000000000000000006"
+}
+native BUY prepareExactIn failed as site would show: the selected Factory or pool is not enabled by the reviewed native execution registry
+native SELL prepareExactIn failed as site would show: the selected Factory or pool is not enabled by the reviewed native execution registry
+fallback quoteExactInput BUY 0.01 (quote-asset in): {
+ "amountOut": "1008064516144899",
+ "fee": "5050505050506",
+ "amountLeft": "9494949494949493",
+ "asOfBlock": "42063265"
+}
+fallback quoteExactInput SELL 1000000 raw base in: {
+ "amountOut": "487110",
+ "fee": "4921",
+ "amountLeft": "0",
+ "asOfBlock": "42063265"
+}
+graduated curve quoteExactInput reverts (site explains this case): The contract function "quoteExactInput" reverted with the following signature:
+0x48e8f5d8
+
+=== 4. CREATE LAUNCH (planner, unsigned) ===
+planner target (newest qualified, as site preselects): {
+ "id": "78",
+ "tokenDecimals": 9
+}
+deployment verified at block: 42063266n
+plan probe succeeded: {
+ "probeAccount": "0x1C6fc66d6C059Db31BAea571FdCe8b18A3C9cBbf",
+ "amt": "0.01"
+}
+plan: {
+ "status": "APPROVAL_REQUIRED",
+ "operation": "EXISTING_CONFIG_ATOMIC_FIRST_BUY",
+ "transactionKind": "ERC20_APPROVAL",
+ "configId": "78",
+ "totalQuoteAmountRaw": "10000000000000000",
+ "totalQuoteFormatted": "0.01",
+ "estimatedGasUnits": "46523",
+ "txTo": "0x4200000000000000000000000000000000000006",
+ "approvalRequirements": [
+  {
+   "token": "0x4200000000000000000000000000000000000006",
+   "decimals": 18,
+   "spender": "0x1a19a3b0e69b33db3a2f9b2487866b4be04dd451",
+   "exactAmountRaw": "10000000000000000",
+   "currentAllowanceRaw": "0"
+  }
+ ]
+}
+approval token is WETH: true
+approval spender is first-buy executor: true
+
+=== 6. WALLET (static, headless-verifiable part) ===
+chain id decimal: 91342
+chain id hex used by wallet_addEthereumChain payload: 0x164CE
+RPC eth_chainId: 0x164ce
+
+DONE
