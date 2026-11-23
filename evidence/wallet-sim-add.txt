@@ -8,8 +8,8 @@ PASS  add payload chainName — GIWA Sepolia
 PASS  add payload nativeCurrency ETH/18 — {"name":"Ether","symbol":"ETH","decimals":18}
 PASS  add payload rpcUrls — ["https://sepolia-rpc.giwa.io"]
 PASS  add payload blockExplorerUrls — ["https://sepolia-explorer.giwa.io"]
-PASS  header shows the selected wallet name (MetaMask) — MetaMask · 0x1C6f…cBbf · 47.337219653985802998 ETH
-PASS  header shows ETH balance line — MetaMask · 0x1C6f…cBbf · 47.337219653985802998 ETH
+PASS  header shows the selected wallet name (MetaMask) — MetaMask · 0x1C6f…cBbf · 47.327219618052354871 ETH
+PASS  header shows ETH balance line — MetaMask · 0x1C6f…cBbf · 47.327219618052354871 ETH
 PASS  Generate plan button enabled after connect
 PASS  disconnect returns button to Connect Wallet
 PASS  disconnect asked MetaMask to revoke eth_accounts (best effort)
