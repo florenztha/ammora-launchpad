@@ -1,0 +1,686 @@
+Catalog slot: v4-auto-route-20260917
+Chain: 91342
+Config registry: 0x6d043014972b87406C4757a5f2d655A24e0b0aF9
+Launch factory: 0x35353a2Dab7426EcCAe6f5FB267702a542ab68fA
+First buy executor: 0x1a19a3b0e69b33db3a2f9b2487866b4be04dd451
+Launch protocol version: 4
+Token lock (vesting) factory: {
+ "chainId": 91342,
+ "factory": "0x191E814b1f4a6A66377775477671E7890c9Da799",
+ "implementation": "0x1c7Ae6E6d6d619C3ebB431c6C2e1c79432361927",
+ "tokenPolicyRegistry": "0xADD644Af3a868Ef4165e04CA5eac280ab5819bE3",
+ "factoryRuntimeCodeHash": "0x23015730fc251ce2cc43746d500867a79063a024856268e72b4ccee06688d592",
+ "implementationRuntimeCodeHash": "0x768ea5b3d59819d9b7d1ca5a22fe55b2ff5157771ea1d5d7660bb10b9c17fd6e"
+}
+Live chain id: 91342
+Latest block: 42060171n
+Latest block hash: 0x3c825b1b0557892e4d211a980dc1609f8050e8d0bd451e7211ebd94f7e00c999
+Block base fee (wei): 261n
+Bytecode present at factory 0x35353a2Dab7426EcCAe6f5FB267702a542ab68fA: true
+Bytecode present at configRegistry 0x6d043014972b87406C4757a5f2d655A24e0b0aF9: true
+Bytecode present at firstBuyExecutor 0x1a19a3b0e69b33db3a2f9b2487866b4be04dd451: true
+Registry nextConfigId: 82n
+Config: {
+ "id": "1",
+ "enabled": true,
+ "configHash": "0x48b5150b6e253a8cf40d3f4dcc0549b93c6c8f0d7d3d43ac17bdd8ab00f47826",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "750000000000000000000000",
+ "migrationQuoteThreshold": "1000000000000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "2",
+ "enabled": true,
+ "configHash": "0x48b5150b6e253a8cf40d3f4dcc0549b93c6c8f0d7d3d43ac17bdd8ab00f47826",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "750000000000000000000000",
+ "migrationQuoteThreshold": "1000000000000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "3",
+ "enabled": true,
+ "configHash": "0x48b5150b6e253a8cf40d3f4dcc0549b93c6c8f0d7d3d43ac17bdd8ab00f47826",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "750000000000000000000000",
+ "migrationQuoteThreshold": "1000000000000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "4",
+ "enabled": true,
+ "configHash": "0xec0f91c5bf2943454abdc139170e5ea204a38fc1e102541a6a27224ec881a293",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "2000000000000000",
+ "migrationQuoteThreshold": "500000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "5",
+ "enabled": true,
+ "configHash": "0xbb1e06d720c823de8dbcf9528b20301d961cda3d19a5df821721cb8879d778ef",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "2000000000000000",
+ "migrationQuoteThreshold": "500000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "6",
+ "enabled": false,
+ "configHash": "0x6048908774397e0691bb0e19f72dabb790eb0d892d6081d3622b39e7f738e667",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000000000000000000",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "0",
+ "note": "QUARANTINED by docs graduation readiness notice: never use for new launches"
+}
+Config: {
+ "id": "7",
+ "enabled": false,
+ "configHash": "0xc817ec25cd0c5646a3835fdb4781a5f6475158ba4b21e57afdc1a39382edba49",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000000000000000000",
+ "migrationQuoteThreshold": "250000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "8",
+ "enabled": false,
+ "configHash": "0x3fd8f3b5e00ee7614320a3ef16e1d1f4645d200ba3e3e374abfea183d2de3fce",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000000000000000000",
+ "migrationQuoteThreshold": "100000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "9",
+ "enabled": false,
+ "configHash": "0x569eb66eec935a8b68003d533230859d24e4116bce83ea27e5108be7b4eeb445",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "2000000000000000000",
+ "migrationQuoteThreshold": "1000000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "10",
+ "enabled": true,
+ "configHash": "0xec0f91c5bf2943454abdc139170e5ea204a38fc1e102541a6a27224ec881a293",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "2000000000000000",
+ "migrationQuoteThreshold": "500000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "11",
+ "enabled": true,
+ "configHash": "0xbb1e06d720c823de8dbcf9528b20301d961cda3d19a5df821721cb8879d778ef",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "2000000000000000",
+ "migrationQuoteThreshold": "500000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "12",
+ "enabled": true,
+ "configHash": "0xc2f40255ee580e5867d103bbbfa52b13d40b97bdf7bbf55c3f37530bc3ed308b",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "112500000000247",
+ "migrationQuoteThreshold": "10000000000000",
+ "migrationBaseThreshold": "12500000000247"
+}
+Config: {
+ "id": "13",
+ "enabled": true,
+ "configHash": "0x2380172b7d06c26959f2b19e08a6606fa7867be1976c9af36ce88bd2a9b5b91f",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "112500000000247",
+ "migrationQuoteThreshold": "10000000000000",
+ "migrationBaseThreshold": "12500000000247"
+}
+Config: {
+ "id": "14",
+ "enabled": true,
+ "configHash": "0x5b82cc68ac46abc7ff4e5936f1af478b9688f9bc2bb008c30859bade664c450f",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000004656700",
+ "migrationQuoteThreshold": "100000000",
+ "migrationBaseThreshold": "4656700"
+}
+Config: {
+ "id": "15",
+ "enabled": true,
+ "configHash": "0xdddfff9e47ef1b8e950f6e1302923c280da3c80dda4198fa1a61b4b27bbeca93",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081633",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "10204081633"
+}
+Config: {
+ "id": "16",
+ "enabled": true,
+ "configHash": "0x94c42d1e421753c66339f9f7455abbd347200d27dd681137745fb7c2e4fb1ec1",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1020000000001",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "20000000001"
+}
+Config: {
+ "id": "17",
+ "enabled": true,
+ "configHash": "0xdddfff9e47ef1b8e950f6e1302923c280da3c80dda4198fa1a61b4b27bbeca93",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081633",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "10204081633"
+}
+Config: {
+ "id": "18",
+ "enabled": true,
+ "configHash": "0x7e994f8b8dfd439fdd470b35efcaeef74387e747a56f629a59604d46643493f3",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1212244897960",
+ "migrationQuoteThreshold": "1200000000000",
+ "migrationBaseThreshold": "12244897960"
+}
+Config: {
+ "id": "19",
+ "enabled": true,
+ "configHash": "0xdddfff9e47ef1b8e950f6e1302923c280da3c80dda4198fa1a61b4b27bbeca93",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081633",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "10204081633"
+}
+Config: {
+ "id": "20",
+ "enabled": true,
+ "configHash": "0xdddfff9e47ef1b8e950f6e1302923c280da3c80dda4198fa1a61b4b27bbeca93",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081633",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "10204081633"
+}
+Config: {
+ "id": "21",
+ "enabled": true,
+ "configHash": "0x402c2cdd223ecd8297374eb066368d395478615dd5323ac88ad14b8dcb5e7371",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "750867386276035301",
+ "migrationQuoteThreshold": "6500000000000000000",
+ "migrationBaseThreshold": "867386276035301"
+}
+Config: {
+ "id": "22",
+ "enabled": true,
+ "configHash": "0xc56879545899e8bba26c12d5c30bb52f19269a21aa91781451a0441dbceefcd8",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204281633",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "10204081633"
+}
+Config: {
+ "id": "23",
+ "enabled": true,
+ "configHash": "0xf0a61b2cf63e014a5811e9cbf49037d9a296a1b6a3be6c0ee8869aefd94f00d6",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "2037735849058",
+ "migrationQuoteThreshold": "1100000000000",
+ "migrationBaseThreshold": "37735849058"
+}
+Config: {
+ "id": "24",
+ "enabled": true,
+ "configHash": "0xdddfff9e47ef1b8e950f6e1302923c280da3c80dda4198fa1a61b4b27bbeca93",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081633",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "10204081633"
+}
+Config: {
+ "id": "25",
+ "enabled": true,
+ "configHash": "0xdddfff9e47ef1b8e950f6e1302923c280da3c80dda4198fa1a61b4b27bbeca93",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081633",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "10204081633"
+}
+Config: {
+ "id": "26",
+ "enabled": true,
+ "configHash": "0xfc1fd5d64b9ee42b33ca378eef55701e99878b0659dcf8151ba419dfcc5a8c13",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "525000000008871944",
+ "migrationQuoteThreshold": "10000000000000000",
+ "migrationBaseThreshold": "225000000008871944"
+}
+Config: {
+ "id": "27",
+ "enabled": true,
+ "configHash": "0xb30299d8fcb5c8139eea52e16c155ff15b350f0044efdf9c6a63a565f0eded35",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1333333333342095747",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "333333333342095747"
+}
+Config: {
+ "id": "28",
+ "enabled": true,
+ "configHash": "0x2baa47b54236c7190a44ebcac567da1d741d853966b4883b583a2b3e31c4b932",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000010000200005",
+ "migrationQuoteThreshold": "1000000000000000000",
+ "migrationBaseThreshold": "10000200005"
+}
+Config: {
+ "id": "29",
+ "enabled": true,
+ "configHash": "0xdd1604e113358ba9193db98f6db8affaa1ab93bb5211df8ff8ba3d967eaab243",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1005050505050586",
+ "migrationQuoteThreshold": "2000000000000000",
+ "migrationBaseThreshold": "5050505050586"
+}
+Config: {
+ "id": "30",
+ "enabled": true,
+ "configHash": "0x69457d67b872b4bbb8f0294944beaa6357b323e78b2476ae45189df7f66c0826",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "999999999999999999",
+ "migrationQuoteThreshold": "100000000000000000",
+ "migrationBaseThreshold": "99019513592784828"
+}
+Config: {
+ "id": "31",
+ "enabled": true,
+ "configHash": "0x7c0d001d83f768f04119327b32d05278929e658a5e2e890605f7a61ceec83309",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081632818",
+ "migrationQuoteThreshold": "1000000000000000",
+ "migrationBaseThreshold": "10204081632818"
+}
+Config: {
+ "id": "32",
+ "enabled": true,
+ "configHash": "0x37df5ccc9c66f3e015bdb44ff5120f0d90d5f87975ed1fc50a89d417ae48fbeb",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000200080032016",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "200080032016"
+}
+Config: {
+ "id": "33",
+ "enabled": true,
+ "configHash": "0x37df5ccc9c66f3e015bdb44ff5120f0d90d5f87975ed1fc50a89d417ae48fbeb",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000200080032016",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "200080032016"
+}
+Config: {
+ "id": "34",
+ "enabled": true,
+ "configHash": "0x1479319930625e7d42ba3b31aee5f77165d81e77806332cbecad5a3bc715165f",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081632818",
+ "migrationQuoteThreshold": "1000000000000000",
+ "migrationBaseThreshold": "10204081632818"
+}
+Config: {
+ "id": "35",
+ "enabled": true,
+ "configHash": "0x9fb647dff211754f1374b560d92e22507ce41a7c3900e012a3fd2763c5e01fe9",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081632818",
+ "migrationQuoteThreshold": "1000000000000000",
+ "migrationBaseThreshold": "10204081632818"
+}
+Config: {
+ "id": "36",
+ "enabled": true,
+ "configHash": "0x3891992e30c49000e4034d2a6398f648f7b877a909b43d47c64035a99d724d4e",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000000000000000000",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "37",
+ "enabled": true,
+ "configHash": "0x5d50f99196cb19fba7c724d5aae8abd6ea319432567b0367737c56072fad74f2",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081632818",
+ "migrationQuoteThreshold": "1000000000000000",
+ "migrationBaseThreshold": "10204081632818"
+}
+Config: {
+ "id": "38",
+ "enabled": true,
+ "configHash": "0x72daae6acebf18e2f6f0e0e5a8d8a891f4fb138b649de134691cc5f1cd028bda",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081632818",
+ "migrationQuoteThreshold": "1000000000000000",
+ "migrationBaseThreshold": "10204081632818"
+}
+Config: {
+ "id": "39",
+ "enabled": true,
+ "configHash": "0xf2ebb57f8784a6d22cf1eaf0e8dc9f64087fbd0d69069e359e44ec98954161d1",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000200080032016",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "200080032016"
+}
+Config: {
+ "id": "40",
+ "enabled": true,
+ "configHash": "0xfdae4488cc81ccf93e7b8bab855a46738e03bd0abcce843149e9521085e10407",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081632818",
+ "migrationQuoteThreshold": "1000000000000000",
+ "migrationBaseThreshold": "10204081632818"
+}
+Config: {
+ "id": "41",
+ "enabled": true,
+ "configHash": "0xe0baa6a2e65ff111e67f8d1fd8482e72d1f601b3d83b138d72992308b348289d",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000000000000000000",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "42",
+ "enabled": true,
+ "configHash": "0x4bdba5130c5a72b2e67301285b64e87ae172b5989ae268a50919ed83c835f362",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "100000000000000000",
+ "migrationQuoteThreshold": "5000000000000000000",
+ "migrationBaseThreshold": "9901951358857278"
+}
+Config: {
+ "id": "43",
+ "enabled": true,
+ "configHash": "0xde46ff1f648884125f65f8d81a02ba9376d393ed8c8d7489c245dcb2d5e0e3cf",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000010000200005",
+ "migrationQuoteThreshold": "1000000000000000000",
+ "migrationBaseThreshold": "10000200005"
+}
+Config: {
+ "id": "44",
+ "enabled": true,
+ "configHash": "0xd1634a4b578ee172fd83cb684b93dd5aaf4cd8403aa35948541a1972350657bc",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081632818",
+ "migrationQuoteThreshold": "1000000000000000",
+ "migrationBaseThreshold": "10204081632818"
+}
+Config: {
+ "id": "45",
+ "enabled": true,
+ "configHash": "0xef3e085f78ed414f49edb1492e4a211d9ca2c92a51f98ca4b89563012169f0c8",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081633",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "10204081633"
+}
+Config: {
+ "id": "46",
+ "enabled": true,
+ "configHash": "0xe455d29d4fe6a72ac5e93b4f9de7acbd81f7aaba9be2355720ed2c4623bc3c65",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "112500000000246443",
+ "migrationQuoteThreshold": "10000000000000000",
+ "migrationBaseThreshold": "12500000000246443"
+}
+Config: {
+ "id": "47",
+ "enabled": true,
+ "configHash": "0xe455d29d4fe6a72ac5e93b4f9de7acbd81f7aaba9be2355720ed2c4623bc3c65",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "112500000000246443",
+ "migrationQuoteThreshold": "10000000000000000",
+ "migrationBaseThreshold": "12500000000246443"
+}
+Config: {
+ "id": "48",
+ "enabled": true,
+ "configHash": "0x632be8a3eab8512e6d8b67fcf0639981f9355d33b0fe0ba7740568ee17cad64c",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000000000000000000",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "49",
+ "enabled": true,
+ "configHash": "0xc9b4678e7c0c57fe9e57130f56a4ae20922abea0e3844e6e9d3d6aeff45bd92c",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1500000000000000000",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "333333333342095747"
+}
+Config: {
+ "id": "50",
+ "enabled": true,
+ "configHash": "0x41ac53d7811f02c21fc4d79f18acfa04d42e44da7706d090d797b59483a0a3e2",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1000000000000000000",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "0"
+}
+Config: {
+ "id": "51",
+ "enabled": true,
+ "configHash": "0xe83bd311773cd87d1681f6cca8a2a19194bbcfbf3da1130ece99b8dc604b921b",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "999999999999999999",
+ "migrationQuoteThreshold": "100000000000000000",
+ "migrationBaseThreshold": "99019513592784828"
+}
+Config: {
+ "id": "52",
+ "enabled": true,
+ "configHash": "0xd56fb54e5fd06b94627e605a4f97d43780be74c324f0a490b17dea6a9a27272d",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081632818",
+ "migrationQuoteThreshold": "1000000000000000",
+ "migrationBaseThreshold": "10204081632818"
+}
+Config: {
+ "id": "53",
+ "enabled": true,
+ "configHash": "0x10dd5338d82c69b08aac6a639c36758a89065a5959b609c229c48d3fc5b8199f",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1010204081633",
+ "migrationQuoteThreshold": "1000000000000",
+ "migrationBaseThreshold": "10204081633"
+}
+Config: {
+ "id": "54",
+ "enabled": true,
+ "configHash": "0xb42ec3740697c6923b3ffcd4d262363471b0a247f17b108539e67bf11e9df9cc",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "988235294122013106",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "188235294122013106"
+}
+Config: {
+ "id": "55",
+ "enabled": true,
+ "configHash": "0xe72fe9a38ef4c8a64d664fd36cad88734725e73bcfdcf4fae2d63c53c335a744",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "100000000000000000",
+ "migrationQuoteThreshold": "937499999999999999",
+ "migrationBaseThreshold": "22500000000000000"
+}
+Config: {
+ "id": "56",
+ "enabled": true,
+ "configHash": "0xe072f2e2152cb583f79b3b79877445d8a345f8eda338e32bcaf843eb06743090",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1001002004008032",
+ "migrationQuoteThreshold": "10000000000000000",
+ "migrationBaseThreshold": "1002004008032"
+}
+Config: {
+ "id": "57",
+ "enabled": true,
+ "configHash": "0x8525ff6c74ca32daa5a48636ff9767dc8efceafca75314257f8e35771c14c158",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "100000000000000000",
+ "migrationQuoteThreshold": "937499999999999999",
+ "migrationBaseThreshold": "22500000000000000"
+}
+Config: {
+ "id": "58",
+ "enabled": true,
+ "configHash": "0x8525ff6c74ca32daa5a48636ff9767dc8efceafca75314257f8e35771c14c158",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "100000000000000000",
+ "migrationQuoteThreshold": "937499999999999999",
+ "migrationBaseThreshold": "22500000000000000"
+}
+Config: {
+ "id": "59",
+ "enabled": true,
+ "configHash": "0x8525ff6c74ca32daa5a48636ff9767dc8efceafca75314257f8e35771c14c158",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "100000000000000000",
+ "migrationQuoteThreshold": "937499999999999999",
+ "migrationBaseThreshold": "22500000000000000"
+}
+Config: {
+ "id": "60",
+ "enabled": true,
+ "configHash": "0x8525ff6c74ca32daa5a48636ff9767dc8efceafca75314257f8e35771c14c158",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "100000000000000000",
+ "migrationQuoteThreshold": "937499999999999999",
+ "migrationBaseThreshold": "22500000000000000"
+}
+Config: {
+ "id": "61",
+ "enabled": true,
+ "configHash": "0x8525ff6c74ca32daa5a48636ff9767dc8efceafca75314257f8e35771c14c158",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "100000000000000000",
+ "migrationQuoteThreshold": "937499999999999999",
+ "migrationBaseThreshold": "22500000000000000"
+}
+Config: {
+ "id": "62",
+ "enabled": true,
+ "configHash": "0x8525ff6c74ca32daa5a48636ff9767dc8efceafca75314257f8e35771c14c158",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "100000000000000000",
+ "migrationQuoteThreshold": "937499999999999999",
+ "migrationBaseThreshold": "22500000000000000"
+}
+Config: {
+ "id": "63",
+ "enabled": true,
+ "configHash": "0xb8f7c1a7fcd7e2fc15a8402f7354ba1e220d56cffbdf51f14cfeff1758ff9862",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "1124737525000000",
+ "migrationQuoteThreshold": "5000000000000000",
+ "migrationBaseThreshold": "123502500000000"
+}
+Config: {
+ "id": "64",
+ "enabled": true,
+ "configHash": "0x17db6db1c87366e786e78bc907f000125de9667c22436ab5e0aa0dfa5d177912",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "totalSupply": "750000000000000",
+ "migrationQuoteThreshold": "1000000000000000",
+ "migrationBaseThreshold": "250000000000000"
+}
+Qualified template configs (enabled, migrationBaseThreshold=0, not #6): [
+ "1",
+ "2",
+ "3",
+ "4",
+ "5",
+ "10",
+ "11",
+ "36",
+ "41",
+ "48",
+ "50"
+]
+LaunchCreated logs in [42020175, 42030174]: 7
+Latest LaunchCreated args: {
+ "token": "0xFDea69A88142d81B498244D0D5871B70B1498b6b",
+ "curve": "0xAe572164c13BA1b46F413E48475fFdA8823b0A95",
+ "creator": "0x1C6fc66d6C059Db31BAea571FdCe8b18A3C9cBbf",
+ "configId": "67",
+ "configHash": "0x9acfccb1cc2199326cce2696c3b82cf15903f066fa99b011286f5e327bc420f9",
+ "protocolVersion": 4,
+ "metadataURI": "data:application/json,{\"name\":\"India\",\"symbol\":\"INDIA\",\"twitter\":\"https://x.com/AnurodhhitMan\",\"telegram\":\"https://t.me/CryptoMining776\",\"launchpad\":\"Moralume\",\"image\":\"data:image/webp;base64,UklGRkYEAABXRUJQVlA4WAoAAAAgAAAAXwAAXwAASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZWUDggWAIAALAOAJ0BKmAAYAA+tVqkTaclI6IjisDgFolBDgAx6QM9CB+Fe4AqgG3P3Cl6MJwB2BAF/OB3gxzv+U8TXzb+t3wEfyT+0eiB69v1u9kf9iiZKuTfscDVcdDo/TKiNLGaAJ9sr9GVJ06/5lGGtmLy5o+E+MVSAZ7Ubro0/Y1eAAD99Ir/ME36suIf/G8AWJCgAAAA60tWuOuZhhml03tEb2m7mEYzsGdQnemjZ/WOcewrc8SptaYeqyD8e9lN+wZg+nyDai2jbMB/gemOJv5tPmndQTJ4dTbVSJKKZ9jlLWrH9MAov+rNpswX9re7RO7ctbSjsjZ2W461cEZI+mHwWnSG0O+hg5cT6IxWVuX52GMvOdci7ZT/9tBu8qMI6STQN3TdOf4S25/tayryqQgXvI+u1Q6C9wzUrMnjVXK/0BW2dE/b/8s1Mus/UK2fUoj14FTyHv8rgyrQL+K7coN/9MRaIhfocW6rdn4HbnxKZLXnQe1cxyRWsjxNhkWSEvzA+5g7YdZjzYnusMtQte5Fps5cnhlpayppMlNWLJlUl9FdREG4elLlGj7TzCmj5dUNZgOR5jSFPXgNc/2FnOK96oZOqmgjfqCF1b9Vss13goaFW6gge7a+ZkWSFEs4xqeiiAZ+4wKPvYbsiw3GbJh7kxCu+2ilR9P8pkvoTTa8GSyzE4jqZq4P6kSX4mbr3/8V4mCVtbo5kHZ4EF8GtHFSKa8aGcB93Uam3rzxgvuhDnx6AQN5vqHALFn8ciJY7K8H+yREK3KP9lNgeYi+YFDa05tyJLoAAAAAAA==\"}"
+}
+LaunchCreated block: 42029728n
+V4 curve state (latest launch): {
+ "configId": "67",
+ "baseToken": "0xFDea69A88142d81B498244D0D5871B70B1498b6b",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "creator": "0x1C6fc66d6C059Db31BAea571FdCe8b18A3C9cBbf",
+ "sqrtPrice": "13043817825229916424",
+ "status": 3,
+ "currentFeeBps": 100,
+ "currentDynamicFeeBps": 0,
+ "baseReserve": "1",
+ "quoteReserve": "0",
+ "migrationQuoteThreshold": "50000000000000000",
+ "migrationBaseThreshold": "62500000001232215",
+ "canonicalPool": "0xA78433c47cd965B1B3Bb374165356a9b0b1FdC1a",
+ "postMigrationLiquidity": "1630477228185885111837621106422520111",
+ "partnerRecipient": "0xFa256d8b6F73f719b88F8e4281d6741184F9B88C",
+ "feeVault": "0x414Be4a093fDFd7292dCa95C4D6fdD3905Ee6800",
+ "graduationAdapter": "0xF1A0f23036Aae88EEcecd1D9205Dd78c388fe263",
+ "migrationSqrtPrice": "13043817825229916424",
+ "protocolRecipient": "0x13cD27a6E337097dB858C9C4FA472FbAd2F2c637",
+ "feePolicy": "0x17B44C14F640fD429740FA3220f47a567c62725C",
+ "feePolicyVersion": "0xf879bf5d918947898f981f11a71ddee2587454faa24b66b84244d6c8edd9d799",
+ "asOfBlock": "42060191"
+}
+V4 curve quote on active curve 0x041dea7997cF40B2C48A7f6b51A83F8755f5b0EF: 0.01 WETH in (quote -> base): {
+ "amountIn": "1010101010101011",
+ "amountOut": "1000000000000000",
+ "amountLeft": "8989898989898989",
+ "nextSqrtPrice": "130438178252299164246",
+ "fee": "10101010101011",
+ "asOfBlock": "42060191"
+}
+Config used by latest real launch: {
+ "id": "67",
+ "enabled": true,
+ "hash": "0x9acfccb1cc2199326cce2696c3b82cf15903f066fa99b011286f5e327bc420f9",
+ "tokenDecimals": 9,
+ "migrationBaseThreshold": "62500000001232215"
+}
+Portable deployment verified at block: 42060171n
+Plan probe succeeded with account / first-buy amount: {
+ "probeAccount": "0x1C6fc66d6C059Db31BAea571FdCe8b18A3C9cBbf",
+ "amt": "10000000000000000"
+}
+Existing-config atomic first-buy plan: {
+ "status": "APPROVAL_REQUIRED",
+ "operation": "EXISTING_CONFIG_ATOMIC_FIRST_BUY",
+ "transactionKind": "ERC20_APPROVAL",
+ "configId": "50",
+ "totalQuoteAmountRaw": "10000000000000000",
+ "estimatedGasUnits": "46523",
+ "approvalRequirements": [
+  {
+   "token": "0x4200000000000000000000000000000000000006",
+   "decimals": 18,
+   "spender": "0x1a19a3b0e69b33db3a2f9b2487866b4be04dd451",
+   "exactAmountRaw": "10000000000000000",
+   "currentAllowanceRaw": "0"
+  }
+ ],
+ "txTo": "0x4200000000000000000000000000000000000006"
+}
+DONE
