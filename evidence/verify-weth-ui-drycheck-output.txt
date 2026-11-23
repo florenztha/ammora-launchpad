@@ -1,0 +1,26 @@
+Live block: 42069668
+Curve state: {
+  status: 1,
+  baseToken: '0x3d403C1b13afcd93Ef574A775F9a4b099cC57a1d',
+  symbol: 'ZENT',
+  baseDecimals: 9,
+  configId: '82'
+}
+PASS  buy prepareExactIn (erc20) returned a transaction
+PASS  buy transaction targets the curve contract — 0xB00bAABd05Fc794b833e76B2E733ABd38Cb7C985
+PASS  buy transaction value is 0 — 0
+PASS  buy quote is denominated out in the base token — 43842.755100174 ZENT
+PASS  buy has exactly one approval requirement — [{"token":"0x4200000000000000000000000000000000000006","spender":"0xB00bAABd05Fc794b833e76B2E733ABd38Cb7C985","amount":"10000000000000000"}]
+PASS  buy approval token is WETH — 0x4200000000000000000000000000000000000006
+PASS  buy approval spender is the curve — 0xB00bAABd05Fc794b833e76B2E733ABd38Cb7C985
+PASS  buy approval amount is the exact trade amount — 10000000000000000
+PASS  sell prepareExactIn (erc20) returned a transaction
+PASS  sell transaction targets the curve contract — 0xB00bAABd05Fc794b833e76B2E733ABd38Cb7C985
+PASS  sell transaction value is 0 — 0
+PASS  sell quote pays out in WETH — 0.000000001165752917 WETH
+PASS  sell has exactly one approval requirement — [{"token":"0x3d403C1b13afcd93Ef574A775F9a4b099cC57a1d","spender":"0xB00bAABd05Fc794b833e76B2E733ABd38Cb7C985","amount":"10000000"}]
+PASS  sell approval token is the base token — 0x3d403C1b13afcd93Ef574A775F9a4b099cC57a1d
+PASS  sell approval spender is the curve — 0xB00bAABd05Fc794b833e76B2E733ABd38Cb7C985
+PASS  sell approval amount is the exact trade amount — 10000000
+
+DRY CHECK: all checks passed
