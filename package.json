@@ -1,0 +1,20 @@
+{
+  "name": "ammora-launchpad",
+  "version": "1.0.0",
+  "description": "Florenz Launchpad: a static token launchpad built with the Ammora SDK 0.3.9 on GIWA Sepolia testnet.",
+  "main": "index.js",
+  "scripts": {
+    "build": "mkdir -p docs dist && esbuild src/main.js --bundle --minify --format=iife --platform=browser --target=es2022 --outfile=docs/bundle.js && cp index.html docs/index.html && cp -r docs/. dist/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ammora-protocol/sdk": "0.3.9",
+    "viem": "2.58.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "private": true
+}
