@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Florenz Launchpad · Ammora SDK · GIWA Sepolia</title>
+<meta name="description" content="A token launchpad built with the Ammora SDK (@ammora-protocol/sdk 0.3.9) on the GIWA Sepolia testnet.">
+<style>
+  :root{
+    --bg:#0b0e17; --panel:#12172a; --panel2:#171e36; --line:#232c4d;
+    --text:#e8ecf8; --muted:#93a0c4; --accent:#6ee7a0; --accent2:#7dd3fc;
+    --warn:#fbbf24; --err:#f87171; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#1b2a52 0%,var(--bg) 55%);color:var(--text);
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
+  a{color:var(--accent2)}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
+  header{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .brand h1{margin:0;font-size:30px;letter-spacing:.2px}
+  .brand h1 .grad{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .badge{display:inline-block;margin-top:6px;padding:3px 10px;border:1px solid var(--line);border-radius:999px;
+         background:var(--panel);color:var(--muted);font-size:12.5px}
+  .badge b{color:var(--accent);font-weight:600}
+  .walletbox{display:flex;align-items:center;gap:10px}
+  button{background:linear-gradient(90deg,#22c55e,#0ea5e9);color:#04150a;border:0;border-radius:10px;
+         padding:10px 16px;font-weight:700;cursor:pointer;font-size:14px}
+  button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line);font-weight:600}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .addr{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  @media (max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:18px}
+  .card h2{margin:0 0 4px;font-size:17px}
+  .card p.sub{margin:0 0 12px;color:var(--muted);font-size:13px}
+  .rows{display:grid;gap:7px;font-size:13.5px}
+  .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed #1d2542;padding-bottom:6px}
+  .row:last-child{border-bottom:0}
+  .row .k{color:var(--muted)}
+  .row .v{font-family:var(--mono);font-size:12.5px;text-align:right;word-break:break-all}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:6px;box-shadow:0 0 8px var(--accent)}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
+  input,select{width:100%;background:#0d1226;border:1px solid var(--line);color:var(--text);border-radius:10px;
+               padding:9px 11px;font-size:14px;font-family:inherit}
+  input.mono{font-family:var(--mono);font-size:12.5px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .out{margin-top:12px;background:#0a0f22;border:1px solid var(--line);border-radius:10px;padding:12px;
+       font-family:var(--mono);font-size:12.3px;white-space:pre-wrap;word-break:break-all;min-height:44px;color:#c9d4f5}
+  .out:empty{display:none}
+  .launch{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#0d1226}
+  .launch .t{font-weight:700}
+  .launch .m{font-family:var(--mono);font-size:11.8px;color:var(--muted);word-break:break-all}
+  .pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;border:1px solid var(--line);color:var(--muted);margin-left:6px}
+  .pill.active{color:var(--accent);border-color:#14532d}
+  .pill.grad{color:var(--accent2)}
+  .note{font-size:12.5px;color:var(--warn)}
+  .foot{margin-top:26px;color:var(--muted);font-size:12.5px;text-align:center}
+  .err{color:var(--err)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Florenz <span class="grad">Launchpad</span></h1>
+      <span class="badge">Built with the <b>Ammora SDK</b> · @ammora-protocol/sdk 0.3.9 · <b>GIWA Sepolia testnet</b> · chain 91342</span>
+    </div>
+    <div class="walletbox">
+      <span class="addr" id="walletAddr"></span>
+      <button id="connectBtn">Connect Wallet</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2><span class="dot"></span>Live network &amp; Ammora deployment</h2>
+      <p class="sub">Read keylessly through the Ammora SDK deployment catalog and a public RPC client. No wallet needed.</p>
+      <div class="rows" id="netRows"><div class="row"><span class="k">Status</span><span class="v">loading…</span></div></div>
+      <div class="btnrow"><button class="secondary" id="refreshNet">Refresh</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Latest launches on this factory</h2>
+      <p class="sub">Discovered live from <span style="font-family:var(--mono)">LaunchCreated</span> events of the Ammora V4 LaunchFactory, with curve state read through the SDK.</p>
+      <div id="launchList"><p class="sub">scanning…</p></div>
+      <div class="btnrow"><button class="secondary" id="refreshLaunches">Rescan</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Create a launch</h2>
+      <p class="sub">Plans are generated by the SDK's portable lifecycle planner
+        (<span style="font-family:var(--mono)">planExistingConfigAtomicFirstBuy</span>) against a live-verified deployment.
+        The planner never signs: your wallet reviews and sends each step. Testnet only.</p>
+      <label for="cfgSelect">Launch template (Config) — qualified on-chain templates only</label>
+      <select id="cfgSelect"><option value="">loading configs…</option></select>
+      <p class="note" id="cfgNote"></p>
+      <label for="tokName">Token name</label>
+      <input id="tokName" value="Florenz Token" maxlength="64">
+      <label for="tokSymbol">Token symbol</label>
+      <input id="tokSymbol" value="FLRZ" maxlength="16">
+      <label for="tokMeta">Metadata URI (optional)</label>
+      <input id="tokMeta" class="mono" placeholder="ipfs://… or https://…">
+      <label for="firstBuy">First buy amount (WETH)</label>
+      <input id="firstBuy" type="number" step="0.001" min="0" value="0.01">
+      <label for="minOut">Minimum tokens out, raw units (slippage guard)</label>
+      <input id="minOut" class="mono" value="1">
+      <div class="btnrow">
+        <button id="planBtn" disabled>Generate plan</button>
+        <button class="secondary" id="sendPlanBtn" style="display:none">Send plan step</button>
+      </div>
+      <div class="out" id="planOut"></div>
+    </section>
+
+    <section class="card">
+      <h2>Curve quote</h2>
+      <p class="sub">Read-only quote from the SDK's <span style="font-family:var(--mono)">AmmoraV4LaunchCurveClient</span> against a live launch curve.</p>
+      <label for="curveAddr">Curve (pool) address</label>
+      <input id="curveAddr" class="mono" placeholder="0x…">
+      <label for="direction">Direction</label>
+      <select id="direction">
+        <option value="buy">Buy token with WETH (quote → base)</option>
+        <option value="sell">Sell token for WETH (base → quote)</option>
+      </select>
+      <label for="quoteAmt">Amount in</label>
+      <input id="quoteAmt" type="number" step="0.001" min="0" value="0.01">
+      <div class="btnrow"><button id="quoteBtn">Get quote</button></div>
+      <div class="out" id="quoteOut"></div>
+    </section>
+  </div>
+
+  <p class="foot">
+    Florenz Launchpad is a testnet demo built for the Ammora Builder mission.
+    Contracts: Ammora V4 auto-route deployment on GIWA Sepolia.
+    Docs: <a href="https://ammora-docs.vercel.app/guides/launchpad" target="_blank" rel="noopener">Build a launchpad</a> ·
+    SDK: <a href="https://www.npmjs.com/package/@ammora-protocol/sdk" target="_blank" rel="noopener">@ammora-protocol/sdk</a> ·
+    Explorer: <a href="https://sepolia-explorer.giwa.io" target="_blank" rel="noopener">sepolia-explorer.giwa.io</a>.
+    Testnet assets have no value. Nothing here is financial advice.
+  </p>
+</div>
+<script src="./bundle.js"></script>
+</body>
+</html>
