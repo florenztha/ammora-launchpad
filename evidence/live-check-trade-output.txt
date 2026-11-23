@@ -1,0 +1,16 @@
+PASS  network status line shows a live block — GIWA Sepolia testnet · Block 42069708
+PASS  trade token list rendered — 1 token(s)
+PASS  ZENT token (0x3d40...7a1d) is listed — Token 0x3d40…7a1d Trading open
+PASS  ZENT shows Trading open — Token 0x3d40…7a1d Trading open
+PASS  estimate shows a buy quote in WETH
+PASS  estimate shows a sell quote paying WETH
+PASS  estimate is a prepared quote, not a curve-only estimate
+PASS  no leftover "one-click ETH trading is not available" wording
+PASS  keyless: Buy button stays disabled until a wallet connects
+PASS  keyless: estimate asks to connect a wallet
+
+Estimate box HTML:
+<div class="row"><span class="k">Buy with 0.01 WETH</span><span class="v">≈ 43,842.7551 tokens</span></div><div class="row"><span class="k">Sell 0.01 tokens</span><span class="v">≈ 0.000000001165752917 WETH</span></div><div class="row"><span class="k">Connect your wallet to buy or sell.</span></div>
+Status line: GIWA Sepolia testnet · Block 42069708 (block 42069708)
+
+LIVE CHECK: 10/10 checks passed
