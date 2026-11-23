@@ -132,7 +132,10 @@
       <div id="tradeList"><p class="sub">loading tokens…</p></div>
       <label for="tradeAmt">Amount</label>
       <input id="tradeAmt" type="number" step="0.001" min="0" value="0.01">
-      <p class="hint">The same amount is read both ways: as ETH for buying, and as tokens for selling.</p>
+      <p class="hint">The same amount is read both ways: as WETH for buying, and as tokens for selling.</p>
+      <p class="hint">Trades here run in WETH, straight against the token's own price curve, so you need
+        WETH in your wallet. Each trade first asks one approval for exactly that trade's amount, then
+        sends the swap. Your ETH only pays the network fee (gas).</p>
       <div class="est" id="tradeEstimate"></div>
       <div class="btnrow">
         <button id="tradeBuyBtn" disabled>Buy</button>
