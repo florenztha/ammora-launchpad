@@ -5,7 +5,7 @@ A static token launchpad built with the **Ammora SDK** (`@ammora-protocol/sdk@0.
 ("Ship an exchange or launchpad with the Ammora SDK").
 
 **Live site:** https://florenztha.github.io/ammora-launchpad/
-(requires GitHub Pages to be enabled once: Settings → Pages → deploy from branch `main`, folder `/docs`)
+(GitHub Pages is enabled and serves the `docs/` folder from branch `main`.)
 
 ## What it does
 
@@ -13,6 +13,14 @@ A static token launchpad built with the **Ammora SDK** (`@ammora-protocol/sdk@0.
   auto-route deployment catalog (launch factory, config registry, first-buy executor,
   native router, native execution registry, token-lock factory, and the curves'
   protocol-internal quote asset), read through the SDK plus a viem public client.
+- **Wallet connect (EIP-6963):** wallets are discovered through EIP-6963 announcements
+  (`eip6963:announceProvider` / `eip6963:requestProvider`), not through the legacy
+  `window.ethereum` object. That distinction matters: with MetaMask and OKX Wallet
+  installed side by side, OKX claims `window.ethereum`, so a site that only reads
+  `window.ethereum` can only ever connect OKX. When several wallets are installed the
+  site shows a picker; every request, chain switch/add and the viem wallet client then
+  go through the selected provider. Disconnect clears the local session and makes a
+  best-effort `wallet_revokePermissions` call.
 - **Latest launches:** scans `LaunchCreated` events of the Ammora V4 LaunchFactory and
   reads each curve's state through the SDK's `AmmoraV4LaunchCurveClient`.
 - **Create a launch:** enumerates the on-chain Config registry and offers only *qualified*
@@ -51,7 +59,11 @@ browser wallet on testnet.
   planner-generated `APPROVAL_REQUIRED` plan) and
   `verify-native-eth.mjs` / `verify-native-eth-output.txt` (every native-ETH surface
   of SDK 0.3.9 attempted live: swap-client native buy/sell, aggregation route quotes,
-  ALC aggregation quote, and the planner's first-buy plan)
+  ALC aggregation quote, and the planner's first-buy plan) and
+  `audit-live.mjs` / `audit-live-output.txt` (the pre-submission feature audit run:
+  network panel sources, config filter, launch scan, quote paths, planner plan)
+- `AUDIT.md` — the full audit report: per-feature status, the MetaMask connect
+  root cause, and the manual browser test steps
 
 ## Develop
 
