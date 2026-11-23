@@ -9,6 +9,33 @@ A static token launchpad built with the **Ammora SDK** (`@ammora-protocol/sdk@0.
 
 ## What it does
 
+The main page is deliberately simple: two cards, plain language, no protocol
+jargon. Everything technical lives in a collapsed **Advanced** section at the
+bottom of the page and runs on the exact same SDK calls.
+
+- **Create Token (simple):** name, symbol, total supply and a first buy amount,
+  then one "Create Token" button. Behind the scenes the site picks the launch
+  preset (Config) automatically: among the qualified on-chain templates it
+  chooses the one whose total supply is closest to the requested supply on a
+  log scale; Config 78, the config proven end-to-end in `evidence/`, wins ties
+  and is the default when no supply is entered. The planner, the WETH approval
+  (only when the plan requires it) and the launch transaction then run as one
+  progress sequence with plain-language steps.
+- **Buy / Sell (simple):** the latest launches as a clickable token list. Enter
+  an amount and the estimate for both directions is shown before acting, from
+  the native-router quote when the curve is registered for native routing, and
+  otherwise from the curve's own quote with a plain sentence saying trading for
+  that token currently settles in the protocol's quote asset (WETH). Raw SDK
+  errors never appear here; they are logged in Advanced.
+- **Header:** one compact status line (network + live block), wallet connect
+  with the EIP-6963 picker, and the connected account's ETH balance.
+- **Advanced (collapsed by default):** the full network panel and deployment
+  catalog, the detailed launches list with addresses, the config list with
+  parameters and the raw planner (Generate plan / Send plan step), the raw
+  curve quote panel, and a raw error log.
+
+The audited machinery underneath is unchanged:
+
 - **Live network panel (no wallet needed):** chain id, latest block and the Ammora V4
   auto-route deployment catalog (launch factory, config registry, first-buy executor,
   native router, native execution registry, token-lock factory, and the curves'
@@ -23,7 +50,7 @@ A static token launchpad built with the **Ammora SDK** (`@ammora-protocol/sdk@0.
   best-effort `wallet_revokePermissions` call.
 - **Latest launches:** scans `LaunchCreated` events of the Ammora V4 LaunchFactory and
   reads each curve's state through the SDK's `AmmoraV4LaunchCurveClient`.
-- **Create a launch:** enumerates the on-chain Config registry and offers only *qualified*
+- **Create a launch (Advanced raw planner):** enumerates the on-chain Config registry and offers only *qualified*
   templates — enabled, `migrationBaseThreshold == 0`, and never Config #6, which the Ammora
   graduation readiness notice quarantines for new launches. Plans are generated with the
   SDK's portable lifecycle planner (`planExistingConfigAtomicFirstBuy`) against a
@@ -36,7 +63,7 @@ A static token launchpad built with the **Ammora SDK** (`@ammora-protocol/sdk@0.
   wraps ETH ("ETH funds gas and poolCreationFee; WETH funds the first buy"). The site
   labels this honestly instead of relabelling WETH amounts as ETH. See
   `evidence/verify-native-eth-output.txt` for the live proof.
-- **Curve quote (native ETH):** quotes go through the SDK's `AmmoraSwapClient`
+- **Curve quote (Advanced, native ETH):** quotes go through the SDK's `AmmoraSwapClient`
   (`prepareExactIn`, model `dbc`) and the deployment's native router: a buy sends
   native GIWA Sepolia ETH as transaction value with no ERC-20 approval, a sell pays
   native ETH back out. The router wraps/unwraps internally; the curve itself custodies
