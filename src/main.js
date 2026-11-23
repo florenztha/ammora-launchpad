@@ -181,29 +181,157 @@ async function loadLaunches() {
 }
 
 // ---------------------------------------------------------------- wallet
+// Provider discovery follows EIP-6963, and this is load-bearing, not cosmetic:
+// when MetaMask and OKX Wallet are both installed, OKX claims the legacy
+// window.ethereum object for itself, while MetaMask is only reachable through
+// its EIP-6963 announcement. Code that talks only to window.ethereum can
+// therefore only ever connect OKX. Every wallet interaction below goes through
+// the one provider the visitor actually picked in the picker.
+const GIWA_CHAIN_ID_HEX = '0x164CE'; // 91342, canonical hex form
+const announcedWallets = new Map(); // EIP-6963 uuid -> { info, provider }
+let selectedWallet = null; // { info, provider } chosen by the visitor
+let walletName = '';
 let account = null;
 let walletClient = null;
+let boundProvider = null;
 
-async function connectWallet() {
-  const btn = $('connectBtn');
-  if (!window.ethereum) {
-    $('walletAddr').innerHTML = '<span class="err">No browser wallet found. Install MetaMask or a compatible wallet.</span>';
-    return;
+function walletDisplayName(detail) {
+  const { info, provider } = detail ?? {};
+  if (info?.rdns === 'com.okex.wallet' || provider?.isOkxWallet) return 'OKX Wallet';
+  if (info?.rdns === 'io.metamask') return 'MetaMask';
+  if (info?.name) return info.name;
+  if (provider?.isMetaMask) return 'MetaMask';
+  return 'Browser wallet';
+}
+
+window.addEventListener('eip6963:announceProvider', (event) => {
+  const detail = event.detail;
+  if (detail?.info?.uuid && detail?.provider?.request) announcedWallets.set(detail.info.uuid, detail);
+});
+function requestWalletAnnouncements() {
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
+}
+requestWalletAnnouncements();
+
+function legacyWalletDetail() {
+  // Fallback for wallets that predate EIP-6963. OKX exposes its own global;
+  // window.ethereum belongs to whichever wallet claimed it (often OKX), so it
+  // is only used when no wallet announced itself at all.
+  const okx = window.okxwallet?.request ? window.okxwallet : window.okxwallet?.ethereum;
+  if (okx?.request) return { info: { uuid: 'legacy-okx', name: 'OKX Wallet', rdns: 'com.okex.wallet' }, provider: okx };
+  const eth = window.ethereum;
+  if (eth?.request) return { info: { uuid: 'legacy-ethereum', name: '', rdns: '' }, provider: eth };
+  return null;
+}
+
+async function discoverWallets() {
+  requestWalletAnnouncements();
+  // Announcements arrive asynchronously; give wallets a brief window to answer.
+  await new Promise((r) => setTimeout(r, 350));
+  const found = [...announcedWallets.values()];
+  if (!found.length) {
+    const legacy = legacyWalletDetail();
+    if (legacy) found.push(legacy);
   }
+  return found;
+}
+
+function renderWalletPicker(wallets) {
+  const picker = $('walletPicker');
+  picker.innerHTML = '';
+  const label = document.createElement('span');
+  label.className = 'addr';
+  label.textContent = 'Choose a wallet:';
+  picker.appendChild(label);
+  for (const detail of wallets) {
+    const b = document.createElement('button');
+    b.className = 'secondary';
+    if (detail.info?.icon) {
+      const img = document.createElement('img');
+      img.src = detail.info.icon;
+      img.alt = '';
+      img.width = 16;
+      img.height = 16;
+      b.appendChild(img);
+    }
+    b.appendChild(document.createTextNode(walletDisplayName(detail)));
+    b.addEventListener('click', () => connectWallet(detail));
+    picker.appendChild(b);
+  }
+  picker.style.display = 'flex';
+}
+function hideWalletPicker() {
+  $('walletPicker').style.display = 'none';
+  $('walletPicker').innerHTML = '';
+}
+
+function bindProviderEvents(provider) {
+  if (boundProvider === provider) return;
+  unbindProviderEvents();
+  boundProvider = provider;
+  provider.on?.('accountsChanged', onAccountsChanged);
+  provider.on?.('chainChanged', onChainChanged);
+}
+function unbindProviderEvents() {
+  if (!boundProvider) return;
+  boundProvider.removeListener?.('accountsChanged', onAccountsChanged);
+  boundProvider.removeListener?.('chainChanged', onChainChanged);
+  boundProvider = null;
+}
+async function onAccountsChanged(accounts) {
+  if (!accounts?.length) { disconnectWallet(); return; }
+  account = accounts[0];
+  if (selectedWallet) {
+    walletClient = createWalletClient({ account, chain: giwaSepolia, transport: custom(selectedWallet.provider) });
+  }
+  await showWallet();
+}
+function onChainChanged(chainIdHex) {
+  if (parseInt(chainIdHex, 16) !== 91342) {
+    $('walletAddr').innerHTML = '<span class="err">Wrong network: switch your wallet to GIWA Sepolia (chain 91342).</span>';
+    $('planBtn').disabled = true;
+  } else {
+    $('planBtn').disabled = false;
+    showWallet();
+  }
+}
+
+async function onConnectClick() {
+  if (account) { disconnectWallet(); return; }
+  const btn = $('connectBtn');
+  btn.disabled = true;
+  try {
+    const wallets = await discoverWallets();
+    if (!wallets.length) {
+      $('walletAddr').innerHTML = '<span class="err">No browser wallet found. Install MetaMask or OKX Wallet.</span>';
+      return;
+    }
+    const stillThere = selectedWallet && wallets.some((w) => w.provider === selectedWallet.provider);
+    if (wallets.length > 1 && !stillThere) { renderWalletPicker(wallets); return; }
+    await connectWallet(stillThere ? selectedWallet : wallets[0]);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function connectWallet(detail) {
+  const btn = $('connectBtn');
+  const provider = detail.provider;
+  hideWalletPicker();
   try {
     btn.disabled = true;
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    account = accounts[0];
-    const current = await window.ethereum.request({ method: 'eth_chainId' });
+    const accounts = await provider.request({ method: 'eth_requestAccounts' });
+    if (!accounts?.length) throw new Error('The wallet returned no account.');
+    const current = await provider.request({ method: 'eth_chainId' });
     if (parseInt(current, 16) !== 91342) {
       try {
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x164ce' }] });
+        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: GIWA_CHAIN_ID_HEX }] });
       } catch (err) {
-        if (err.code === 4902) {
-          await window.ethereum.request({
+        if (err?.code === 4902) {
+          await provider.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: '0x164ce', chainName: 'GIWA Sepolia',
+              chainId: GIWA_CHAIN_ID_HEX, chainName: 'GIWA Sepolia',
               nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
               rpcUrls: [RPC_URL], blockExplorerUrls: [EXPLORER],
             }],
@@ -211,14 +339,37 @@ async function connectWallet() {
         } else throw err;
       }
     }
-    walletClient = createWalletClient({ chain: giwaSepolia, transport: custom(window.ethereum) });
-    btn.textContent = 'Connected';
+    selectedWallet = detail;
+    walletName = walletDisplayName(detail);
+    account = accounts[0];
+    walletClient = createWalletClient({ account, chain: giwaSepolia, transport: custom(provider) });
+    bindProviderEvents(provider);
+    btn.textContent = 'Disconnect';
     $('planBtn').disabled = false;
     await showWallet();
   } catch (e) {
     $('walletAddr').innerHTML = `<span class="err">${esc(e.shortMessage ?? e.message)}</span>`;
+  } finally {
     btn.disabled = false;
   }
+}
+
+async function disconnectWallet() {
+  const provider = selectedWallet?.provider;
+  account = null;
+  walletClient = null;
+  currentPlan = null;
+  unbindProviderEvents();
+  $('connectBtn').textContent = 'Connect Wallet';
+  $('walletAddr').textContent = '';
+  $('wethBal').textContent = '';
+  $('planBtn').disabled = true;
+  $('sendPlanBtn').style.display = 'none';
+  // Best effort: ask the wallet to revoke the eth_accounts permission so the
+  // next connect re-prompts (MetaMask supports wallet_revokePermissions;
+  // wallets without it simply ignore the attempt and the local disconnect
+  // above still stands).
+  try { await provider?.request({ method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] }); } catch { /* unsupported: local disconnect already done */ }
 }
 
 async function showWallet() {
@@ -228,12 +379,12 @@ async function showWallet() {
       publicClient.getBalance({ address: account }),
       publicClient.readContract({ address: WETH, abi: erc20Abi, functionName: 'balanceOf', args: [account] }),
     ]);
-    $('walletAddr').textContent = `${short(account)} · ${formatEther(eth)} ETH`;
+    $('walletAddr').textContent = `${walletName ? walletName + ' · ' : ''}${short(account)} · ${formatEther(eth)} ETH`;
     // The WETH balance is shown only inside the Create panel: the SDK's atomic
     // first buy is the one step that still settles in the protocol quote asset.
     $('wethBal').textContent = `Your WETH balance for the first-buy step below: ${formatEther(weth)} WETH. Your native ETH pays gas and the pool creation fee.`;
   } catch {
-    $('walletAddr').textContent = short(account);
+    $('walletAddr').textContent = `${walletName ? walletName + ' · ' : ''}${short(account)}`;
   }
 }
 
@@ -437,7 +588,7 @@ async function runQuote() {
 }
 
 // ---------------------------------------------------------------- wiring
-$('connectBtn').addEventListener('click', connectWallet);
+$('connectBtn').addEventListener('click', onConnectClick);
 $('refreshNet').addEventListener('click', loadNetwork);
 $('refreshLaunches').addEventListener('click', loadLaunches);
 $('planBtn').addEventListener('click', generatePlan);
@@ -448,10 +599,9 @@ $('direction').addEventListener('change', () => {
     ? 'Amount in (base token)'
     : 'Amount in (ETH, native GIWA Sepolia)';
 });
-if (window.ethereum?.on) {
-  window.ethereum.on('accountsChanged', () => location.reload());
-  window.ethereum.on('chainChanged', () => location.reload());
-}
+// Account/chain change events are bound to the selected provider at connect
+// time (see bindProviderEvents); there is deliberately no window.ethereum
+// listener here, since window.ethereum may belong to a different wallet.
 loadNetwork();
 loadConfigs();
 loadLaunches();
