@@ -176,3 +176,43 @@ in sections 1–5 is unchanged underneath and was re-verified after the rebuild:
 - The manual browser test steps in section 4 still apply; in the simple flow,
   step 8's launch can equivalently be run from the Create Token card with a
   single button.
+
+---
+
+## Addendum — WETH Buy/Sell enabled (2026-11-23, after the UI simplification)
+
+A follow-up verification narrowed one conclusion of section 5. The native-ETH
+path is still registry-blocked, exactly as documented there. But the block is
+narrower than the audit assumed: in SDK 0.3.9 the deployment-registry check
+runs only for `native` assets. With `inputAsset`/`outputAsset` set to
+`erc20`, `AmmoraSwapClient.prepareExactIn` skips the registry and prepares a
+`swapExactInput` transaction directly against the token's own curve contract,
+with an exact-amount ERC-20 approval per trade (buy: WETH to the curve; sell:
+the base token to the curve) and transaction value 0.
+
+Evidence: `evidence/verify-weth-path.mjs` and
+`evidence/verify-weth-path-decode.mjs` (output in
+`evidence/verify-weth-path-output.txt`). Keyless prepare plus `eth_call`
+simulations with balance/allowance state overrides matched the SDK quotes
+exactly, in both directions, on the site's ZENT curve and on a second live
+curve; control runs without the overrides reverted, as expected. Two real
+third-party trades on the same path (2026-11-21) were also confirmed via RPC.
+
+Change made: the simple Buy / Sell card now prepares trades with `erc20`
+assets, so its Buy and Sell buttons execute real WETH trades through the
+visitor's own wallet (one exact-amount approval, then the swap; the result
+message links the transaction on the explorer). The card states plainly that
+trades run in WETH, that a WETH balance is needed, and that ETH only pays
+gas. It does not claim ETH trading. Curve-quote estimates remain as the
+fallback if a prepare ever fails, with the buttons off in that case.
+Graduated tokens stay non-tradable. The Advanced native quote panel is
+unchanged and still reports the registry block, which remains true for the
+native path.
+
+Re-verification after the change: `evidence/wallet-sim-test.mjs` still
+passes in full against the new bundle (switch 11/11, add 16/16);
+`evidence/verify-weth-ui-drycheck.mjs` mirrors the card's exact prepare call
+keylessly and asserts the prepared transaction targets the curve with value
+0 and exact-amount, curve-as-spender approvals (all checks passed);
+`evidence/live-check-trade.mjs` loads the built bundle and confirms the card
+renders the ZENT token with live prepared WETH quotes in both directions.
