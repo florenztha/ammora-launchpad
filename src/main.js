@@ -494,9 +494,9 @@ async function showWallet() {
       publicClient.readContract({ address: WETH, abi: erc20Abi, functionName: 'balanceOf', args: [account] }),
     ]);
     $('walletAddr').textContent = `${walletName ? walletName + ' · ' : ''}${short(account)} · ${formatEther(eth)} ETH`;
-    // The WETH balance is shown only inside the Advanced create panel: the
-    // SDK's atomic first buy is the one step that still settles in the
-    // protocol quote asset.
+    // This note lives inside the Advanced create panel: the SDK's atomic
+    // first buy settles in the protocol quote asset. The Buy / Sell card
+    // reads the same WETH balance separately for its own trades.
     $('wethBal').textContent = `Your WETH balance for the first-buy step below: ${formatEther(weth)} WETH. Your native ETH pays gas and the pool creation fee.`;
   } catch {
     $('walletAddr').textContent = `${walletName ? walletName + ' · ' : ''}${short(account)}`;
@@ -705,12 +705,16 @@ async function sendPlanStep() {
 }
 
 // ---------------------------------------------------------------- swap client (shared)
-// Trading on a launch curve is native-ETH based. The SDK's AmmoraSwapClient
-// plans the trade through the deployment's native router: a buy sends the
-// amount as native transaction value (no ERC-20 approval), a sell pays native
-// ETH back out. The router wraps/unwraps internally; the curve itself keeps
-// custody of its quote asset (WETH), which is why the curve's own reference
-// quote is denominated in that protocol-internal asset.
+// The simple Buy / Sell card trades in WETH, the protocol's quote asset.
+// With inputAsset/outputAsset 'erc20' the SDK's AmmoraSwapClient skips the
+// native execution registry check (that check runs only for 'native'
+// assets) and prepares a swapExactInput transaction directly against the
+// token's own curve contract: an exact-amount ERC-20 approval per trade and
+// transaction value 0. Verified live in evidence/verify-weth-path.mjs:
+// prepare plus eth_call simulations matched the SDK quotes exactly, in both
+// directions, on live curves. The Advanced quote panel further below still
+// uses the native router path ('native' assets), which remains
+// registry-blocked chain-side; nothing there changed.
 let swapClientPromise = null;
 function getSwapClient() {
   if (!swapClientPromise) {
@@ -723,45 +727,49 @@ function getSwapClient() {
 
 // -------------------------------------------------- simple Buy / Sell flow
 let tradeState = null; // { state, baseDecimals }
-let tradeNative = { buy: null, sell: null, buyBlocked: false, sellBlocked: false };
+let tradePlans = { buy: null, sell: null };
 let estimateTimer = null;
 
 async function computeTradeSide(dir, curve, state, baseDecimals, amount) {
-  // Returns { native: prepared|null, nativeError, fallbackOut: bigint|null }.
+  // Returns { prepared|null, prepareError, fallbackOut: bigint|null }.
+  // Trades are prepared in WETH ('erc20' assets) so the SDK targets the
+  // token's curve contract directly; the registry check that blocks the
+  // native path does not run for erc20 assets (see the swap-client note
+  // above and evidence/verify-weth-path.mjs).
   const payer = account ?? state.creator;
   const swaps = await getSwapClient();
-  let native = null;
-  let nativeError = null;
+  let prepared = null;
+  let prepareError = null;
   try {
     if (dir === 'buy') {
-      native = await swaps.prepareExactIn({
-        model: 'dbc', pool: curve, tokenIn: WETH, inputAsset: 'native',
+      prepared = await swaps.prepareExactIn({
+        model: 'dbc', pool: curve.curve, tokenIn: WETH, inputAsset: 'erc20',
         amountIn: amount, payer, recipient: payer, slippageBps: 100,
       });
     } else {
-      native = await swaps.prepareExactIn({
-        model: 'dbc', pool: curve, tokenIn: state.baseToken, outputAsset: 'native',
+      prepared = await swaps.prepareExactIn({
+        model: 'dbc', pool: curve.curve, tokenIn: state.baseToken, outputAsset: 'erc20',
         amountIn: amount, payer, recipient: payer, slippageBps: 100,
       });
     }
   } catch (e) {
-    nativeError = e;
+    prepareError = e;
   }
   let fallbackOut = null;
-  if (!native) {
+  if (!prepared) {
     try {
       const q = await curve.quoteExactInput(amount, dir === 'sell');
       fallbackOut = q.amountOut;
     } catch { /* graduated curves revert here; the caller presents that plainly */ }
   }
-  return { native, nativeError, fallbackOut };
+  return { prepared, prepareError, fallbackOut };
 }
 
 async function refreshTradeEstimate() {
   const box = $('tradeEstimate');
   const buyBtn = $('tradeBuyBtn');
   const sellBtn = $('tradeSellBtn');
-  tradeNative = { buy: null, sell: null, buyBlocked: false, sellBlocked: false };
+  tradePlans = { buy: null, sell: null };
   buyBtn.disabled = true;
   sellBtn.disabled = true;
   if (!selectedTrade) { box.innerHTML = ''; return; }
@@ -789,43 +797,51 @@ async function refreshTradeEstimate() {
     try { sellAmount = parseUnits(amtStr, baseDecimals); } catch { sellAmount = 0n; }
     const sym = t.symbol || 'tokens';
     const rows = [];
-    let blocked = false;
+    let unprepared = false;
+    let wethBalance = null;
+    if (account) {
+      try {
+        wethBalance = await publicClient.readContract({ address: WETH, abi: erc20Abi, functionName: 'balanceOf', args: [account] });
+        rows.push(`<div class="row"><span class="k">Your WETH balance</span><span class="v">${esc(formatEther(wethBalance))} WETH</span></div>`);
+      } catch { /* balance row is informational; the trade itself is checked on chain */ }
+    }
     if (buyAmount > 0n) {
       const r = await computeTradeSide('buy', curve, state, baseDecimals, buyAmount);
-      if (r.native) {
-        tradeNative.buy = r.native;
-        rows.push(`<div class="row"><span class="k">Buy with ${esc(formatEther(buyAmount))} ETH</span><span class="v">≈ ${esc(fmtInt(r.native.quote.expectedAmountOut, baseDecimals))} ${esc(sym)}</span></div>`);
+      if (r.prepared) {
+        tradePlans.buy = r.prepared;
+        rows.push(`<div class="row"><span class="k">Buy with ${esc(formatEther(buyAmount))} WETH</span><span class="v">≈ ${esc(fmtInt(r.prepared.quote.expectedAmountOut, baseDecimals))} ${esc(sym)}</span></div>`);
+        if (wethBalance != null && buyAmount > wethBalance) {
+          rows.push('<div class="row"><span class="k">Your WETH balance is below this buy amount, so the buy cannot go through yet.</span></div>');
+        }
       } else {
-        tradeNative.buyBlocked = true;
-        blocked = true;
-        logRaw('native buy quote', r.nativeError);
+        unprepared = true;
+        logRaw('weth buy quote', r.prepareError);
         rows.push(r.fallbackOut != null
-          ? `<div class="row"><span class="k">Buy with ${esc(formatEther(buyAmount))} ETH</span><span class="v">≈ ${esc(fmtInt(r.fallbackOut, baseDecimals))} ${esc(sym)} (estimate)</span></div>`
+          ? `<div class="row"><span class="k">Buy with ${esc(formatEther(buyAmount))} WETH</span><span class="v">≈ ${esc(fmtInt(r.fallbackOut, baseDecimals))} ${esc(sym)} (estimate)</span></div>`
           : `<div class="row"><span class="k">Buy estimate unavailable right now.</span></div>`);
       }
     }
     if (sellAmount > 0n) {
       const r = await computeTradeSide('sell', curve, state, baseDecimals, sellAmount);
-      if (r.native) {
-        tradeNative.sell = r.native;
-        rows.push(`<div class="row"><span class="k">Sell ${esc(fmtInt(sellAmount, baseDecimals))} ${esc(sym)}</span><span class="v">≈ ${esc(formatEther(r.native.quote.expectedAmountOut))} ETH</span></div>`);
+      if (r.prepared) {
+        tradePlans.sell = r.prepared;
+        rows.push(`<div class="row"><span class="k">Sell ${esc(fmtInt(sellAmount, baseDecimals))} ${esc(sym)}</span><span class="v">≈ ${esc(formatEther(r.prepared.quote.expectedAmountOut))} WETH</span></div>`);
       } else {
-        tradeNative.sellBlocked = true;
-        blocked = true;
-        logRaw('native sell quote', r.nativeError);
+        unprepared = true;
+        logRaw('weth sell quote', r.prepareError);
         rows.push(r.fallbackOut != null
-          ? `<div class="row"><span class="k">Sell ${esc(fmtInt(sellAmount, baseDecimals))} ${esc(sym)}</span><span class="v">≈ ${esc(formatEther(r.fallbackOut))} ETH value (estimate)</span></div>`
+          ? `<div class="row"><span class="k">Sell ${esc(fmtInt(sellAmount, baseDecimals))} ${esc(sym)}</span><span class="v">≈ ${esc(formatEther(r.fallbackOut))} WETH (estimate)</span></div>`
           : `<div class="row"><span class="k">Sell estimate unavailable right now.</span></div>`);
       }
     }
     if (!rows.length) rows.push('<div class="row"><span class="k">Enter an amount to see an estimate.</span></div>');
-    if (blocked) {
-      rows.push('<div class="row"><span class="k">Trading for this token currently settles in the protocol\'s quote asset (WETH), so one-click ETH trading is not available for it yet. The estimate above comes from the token\'s own price curve.</span></div>');
+    if (unprepared) {
+      rows.push('<div class="row"><span class="k">Trading could not be prepared for this token right now, so the buttons stay off. The estimate above comes from the token\'s own price curve.</span></div>');
     }
     box.innerHTML = rows.join('');
-    buyBtn.disabled = !(tradeNative.buy && account);
-    sellBtn.disabled = !(tradeNative.sell && account);
-    if (!account && (tradeNative.buy || tradeNative.sell)) {
+    buyBtn.disabled = !(tradePlans.buy && account);
+    sellBtn.disabled = !(tradePlans.sell && account);
+    if (!account && (tradePlans.buy || tradePlans.sell)) {
       box.innerHTML += '<div class="row"><span class="k">Connect your wallet to buy or sell.</span></div>';
     }
   } catch (e) {
@@ -850,18 +866,19 @@ async function executeTrade(dir) {
     const amount = dir === 'buy' ? parseEther(amtStr) : parseUnits(amtStr, tradeState.baseDecimals);
     if (amount <= 0n) { msg.textContent = 'Enter an amount above zero.'; return; }
     const r = await computeTradeSide(dir, curve, tradeState.state, tradeState.baseDecimals, amount);
-    if (!r.native) {
-      msg.textContent = 'Trading for this token currently settles in the protocol\'s quote asset (WETH), so one-click ETH trading is not available for it yet.';
-      logRaw(`native ${dir} prepare`, r.nativeError);
+    if (!r.prepared) {
+      msg.textContent = 'Trading could not be prepared for this token right now. The technical details are in the Advanced section below.';
+      logRaw(`weth ${dir} prepare`, r.prepareError);
       return;
     }
-    const prepared = r.native;
-    // Approvals first, if the plan asks for any (a sell approves the token to
-    // the native router; a native buy needs none).
+    const prepared = r.prepared;
+    // Approvals first: the plan asks for one exact-amount approval per trade
+    // (WETH to the curve for a buy, the token to the curve for a sell), with
+    // the token's own curve contract as the spender.
     for (const req of prepared.approvalRequirements ?? []) {
-      msg.textContent = 'Waiting for approval in your wallet…';
-      const tokenAddr = dir === 'sell' ? tradeState.state.baseToken : req.token ?? WETH;
-      const amountRaw = req.exactAmountRaw ?? req.amount;
+      msg.textContent = 'Approving the exact trade amount in your wallet…';
+      const tokenAddr = req.token ?? (dir === 'sell' ? tradeState.state.baseToken : WETH);
+      const amountRaw = req.amount ?? req.exactAmountRaw;
       const hash = await walletClient.writeContract({
         account, chain: giwaSepolia,
         address: tokenAddr, abi: erc20Abi, functionName: 'approve',
@@ -869,7 +886,7 @@ async function executeTrade(dir) {
       });
       await publicClient.waitForTransactionReceipt({ hash });
     }
-    msg.textContent = 'Sending the transaction…';
+    msg.textContent = 'Sending the swap…';
     const hash = await walletClient.sendTransaction({
       account,
       chain: giwaSepolia,
@@ -892,7 +909,7 @@ async function executeTrade(dir) {
     msg.className = 'msg err';
     logRaw(`trade ${dir}`, e);
   } finally {
-    btn.disabled = !(dir === 'buy' ? tradeNative.buy : tradeNative.sell) || !account;
+    btn.disabled = !(dir === 'buy' ? tradePlans.buy : tradePlans.sell) || !account;
   }
 }
 
