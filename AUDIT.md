@@ -142,3 +142,37 @@ FIXED in code, final proof in browser 1 (6) · mixed WORKS / BLOCKED-BY-PROTOCOL
   labels it plainly.
 - The launches list shows the newest launches from the most recent non-empty
   scan chunk (max 8 displayed).
+
+---
+
+## Addendum — UI simplification (2026-11-23, after the audit above)
+
+At the site owner's request, the presentation layer was rebuilt for
+non-technical visitors. This changed **only** the UI; every audited mechanism
+in sections 1–5 is unchanged underneath and was re-verified after the rebuild:
+
+- **New main flow:** header with one compact status line (network + live
+  block); a **Create Token** card (name, symbol, total supply, first buy, one
+  button) that auto-selects the qualified Config (closest total supply on a
+  log scale; Config 78, the evidence-proven config, wins ties and is the
+  default), then chains planner → approval (only if the plan requires it) →
+  launch send as one plain-language progress sequence; and a **Buy / Sell**
+  card (clickable token list, one amount, both-direction estimates shown
+  before acting, native execution when the curve is registered, otherwise the
+  curve-quote estimate plus a plain sentence that trading settles in WETH for
+  that token). Main-flow errors are plain language; raw protocol errors are
+  logged in Advanced.
+- **Moved, not deleted:** the full deployment catalog, config list with
+  parameters, raw planner (Generate plan / Send plan step), raw curve quote
+  panel and a new raw-error log now live in a collapsed **Advanced** section,
+  closed by default, running the identical code paths.
+- **Re-verification after the rebuild:** `evidence/wallet-sim-test.mjs`
+  passes unchanged against the new bundle (switch 11/11, add 16/16, outputs
+  refreshed in `evidence/wallet-sim-switch.txt` / `wallet-sim-add.txt`);
+  `evidence/verify-read.mjs` and `evidence/audit-live.mjs` re-run clean
+  against the live chain (qualified config list unchanged, Config 78 still
+  qualified, planner still returns the same `APPROVAL_REQUIRED` plan shape,
+  native buy/sell still registry-blocked exactly as documented in section 5).
+- The manual browser test steps in section 4 still apply; in the simple flow,
+  step 8's launch can equivalently be run from the Create Token card with a
+  single button.
