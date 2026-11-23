@@ -9,6 +9,7 @@ import {
   ammoraLaunchConfigRegistryV4Abi,
   ammoraLaunchFactoryV4Abi,
   AmmoraV4LaunchCurveClient,
+  AmmoraSwapClient,
   verifyAmmoraPortableDeploymentAtBlock,
   AmmoraPortableLifecyclePlanner,
 } from '@ammora-protocol/sdk';
@@ -25,6 +26,8 @@ const deployment = giwaSepoliaAutoRouteDeployment;
 const REGISTRY = deployment.contracts.launch.configRegistry;
 const FACTORY = deployment.contracts.launch.factory;
 const WETH = deployment.contracts.tokens.wrappedNative;
+const NATIVE_ROUTER = deployment.contracts.routers.native;
+const EXEC_REGISTRY = deployment.contracts.routers.executionRegistry;
 const CORE = {
   launchFactory: giwaSepoliaAtomicLaunchDeployment.contracts.launchFactory,
   feePolicy: giwaSepoliaAtomicLaunchDeployment.contracts.feePolicy,
@@ -72,7 +75,9 @@ async function loadNetwork() {
       ['Launch factory', FACTORY],
       ['Config registry', REGISTRY],
       ['First-buy executor', deployment.contracts.launch.firstBuyExecutor],
-      ['Quote asset (WETH)', WETH],
+      ['Native router (ETH in / out)', NATIVE_ROUTER],
+      ['Native execution registry', EXEC_REGISTRY],
+      ['Curve quote asset (protocol-internal)', `${WETH} (WETH, custodied inside the curves)`],
       ['Token lock factory', lock.factory],
       ['Configs registered', `${nextId - 1n} (next id ${nextId})`],
     ].map(([k, v]) => `<div class="row"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('');
@@ -113,7 +118,7 @@ async function loadConfigs() {
       return;
     }
     sel.innerHTML = found.map((r) =>
-      `<option value="${r.id}">Config #${r.id} · supply ${fmtInt(r.cfg.totalSupply, r.cfg.tokenDecimals)} · graduates at ${formatEther(r.cfg.migrationQuoteThreshold)} WETH</option>`
+      `<option value="${r.id}">Config #${r.id} · supply ${fmtInt(r.cfg.totalSupply, r.cfg.tokenDecimals)} · graduation threshold ${formatEther(r.cfg.migrationQuoteThreshold)} (protocol quote asset)</option>`
     ).join('');
     sel.value = String(found[found.length - 1].id);
     $('cfgNote').textContent =
@@ -223,7 +228,10 @@ async function showWallet() {
       publicClient.getBalance({ address: account }),
       publicClient.readContract({ address: WETH, abi: erc20Abi, functionName: 'balanceOf', args: [account] }),
     ]);
-    $('walletAddr').textContent = `${short(account)} · ${formatEther(eth)} ETH · ${formatEther(weth)} WETH`;
+    $('walletAddr').textContent = `${short(account)} · ${formatEther(eth)} ETH`;
+    // The WETH balance is shown only inside the Create panel: the SDK's atomic
+    // first buy is the one step that still settles in the protocol quote asset.
+    $('wethBal').textContent = `Your WETH balance for the first-buy step below: ${formatEther(weth)} WETH. Your native ETH pays gas and the pool creation fee.`;
   } catch {
     $('walletAddr').textContent = short(account);
   }
@@ -276,12 +284,13 @@ async function generatePlan() {
       `Plan status: ${plan.status}`,
       `Operation: ${plan.operation} (${plan.transactionKind})`,
       `Config: #${plan.configId} · chain ${plan.chainId} · planned at block ${plan.asOfBlock}`,
-      `Total first buy: ${formatEther(plan.totalQuoteAmountRaw)} WETH`,
+      `Total first buy: ${formatEther(plan.totalQuoteAmountRaw)} WETH (the protocol quote asset; SDK 0.3.9 has no native-ETH first buy, see the note above)`,
       `Estimated gas: ${plan.estimatedGasUnits} units`,
     ];
     if (plan.status === 'APPROVAL_REQUIRED') {
       for (const r of plan.approvalRequirements) {
-        lines.push(`Approval needed: ${formatUnits(r.exactAmountRaw, r.decimals)} of token ${r.token} to spender ${r.spender} (current allowance ${formatUnits(r.currentAllowanceRaw, r.decimals)})`);
+        const assetNote = r.token.toLowerCase() === WETH.toLowerCase() ? ' (WETH)' : '';
+        lines.push(`Approval needed: ${formatUnits(r.exactAmountRaw, r.decimals)}${assetNote} of token ${r.token} to spender ${r.spender} (current allowance ${formatUnits(r.currentAllowanceRaw, r.decimals)})`);
       }
       lines.push('Next step: send the approval below, then generate the plan again for the launch step.');
     } else {
@@ -335,6 +344,22 @@ async function sendPlanStep() {
 }
 
 // ---------------------------------------------------------------- quote panel
+// Trading on a launch curve is native-ETH based. The SDK's AmmoraSwapClient
+// plans the trade through the deployment's native router: a buy sends the
+// amount as native transaction value (no ERC-20 approval), a sell pays native
+// ETH back out. The router wraps/unwraps internally; the curve itself keeps
+// custody of its quote asset (WETH), which is why the curve's own reference
+// quote below is denominated in that protocol-internal asset.
+let swapClientPromise = null;
+function getSwapClient() {
+  if (!swapClientPromise) {
+    swapClientPromise = AmmoraSwapClient.create(publicClient, {
+      deploymentCatalog: { [deployment.chain.id]: deployment },
+    });
+  }
+  return swapClientPromise;
+}
+
 async function runQuote() {
   const out = $('quoteOut');
   const curveAddr = $('curveAddr').value.trim();
@@ -346,24 +371,68 @@ async function runQuote() {
     const baseDecimals = await publicClient.readContract({ address: state.baseToken, abi: erc20Abi, functionName: 'decimals' });
     const dir = $('direction').value;
     const baseForQuote = dir === 'sell';
-    const inDecimals = baseForQuote ? baseDecimals : 18;
-    const outDecimals = baseForQuote ? 18 : baseDecimals;
-    const amount = parseUnits($('quoteAmt').value || '0', inDecimals);
+    const amtStr = $('quoteAmt').value || '0';
+    const amount = baseForQuote ? parseUnits(amtStr, baseDecimals) : parseEther(amtStr);
     if (amount <= 0n) { out.textContent = 'Amount must be above zero.'; return; }
-    const q = await curve.quoteExactInput(amount, baseForQuote);
     const [label] = statusLabel(state.status);
-    out.textContent = [
+    const lines = [
       `Curve status: ${label} · config #${state.configId} · fee ${state.currentFeeBps} bps`,
       `Base token: ${state.baseToken} (${baseDecimals} decimals)`,
-      `Reserves: ${fmtInt(state.baseReserve, baseDecimals)} base · ${formatEther(state.quoteReserve)} WETH`,
-      `You pay: ${formatUnits(amount, inDecimals)} ${baseForQuote ? 'base' : 'WETH'}`,
-      `You receive (est.): ${formatUnits(q.amountOut, outDecimals)} ${baseForQuote ? 'WETH' : 'base'}`,
-      `Fee: ${formatUnits(q.fee, inDecimals)} ${baseForQuote ? 'base' : 'WETH'} · unfilled remainder: ${formatUnits(q.amountLeft, inDecimals)}`,
-      `Quoted at block ${q.asOfBlock}`,
-    ].join('\n');
+      `Base reserve: ${fmtInt(state.baseReserve, baseDecimals)} base`,
+      '',
+      '— Native ETH quote (Ammora native router) —',
+    ];
+    // The native plan is bound to a payer. With a connected wallet that is the
+    // visitor's own account; otherwise the curve creator is used as a read-only
+    // reference payer (quoting never signs or sends).
+    const payer = account ?? state.creator;
+    try {
+      const swaps = await getSwapClient();
+      if (!baseForQuote) {
+        const prepared = await swaps.prepareExactIn({
+          model: 'dbc', pool: curveAddr, tokenIn: WETH, inputAsset: 'native',
+          amountIn: amount, payer, recipient: payer, slippageBps: 100,
+        });
+        const q = prepared.quote;
+        lines.push(`You pay: ${formatEther(amount)} ETH (native GIWA Sepolia ETH, sent as transaction value)`);
+        lines.push(`You receive (est.): ${formatUnits(q.expectedAmountOut, baseDecimals)} base · minimum ${formatUnits(q.minimumAmountOut, baseDecimals)} base`);
+        if (q.feeAmount != null) lines.push(`Fee: ${formatUnits(q.feeAmount, 18)} ETH (included in the amount you pay)`);
+        lines.push(`Plan target: native router ${prepared.transaction.to} · transaction value ${formatEther(prepared.transaction.value ?? amount)} ETH · ERC-20 approvals required: ${prepared.approvalRequirements.length}`);
+        lines.push(`Quoted at block ${q.quoteBlockNumber} · payer ${short(payer)}${account ? '' : ' (curve creator, read-only reference; connect your wallet to bind a plan to your account)'}`);
+      } else {
+        const prepared = await swaps.prepareExactIn({
+          model: 'dbc', pool: curveAddr, tokenIn: state.baseToken, outputAsset: 'native',
+          amountIn: amount, payer, recipient: payer, slippageBps: 100,
+        });
+        const q = prepared.quote;
+        lines.push(`You pay: ${formatUnits(amount, baseDecimals)} base`);
+        lines.push(`You receive (est.): ${formatEther(q.expectedAmountOut)} ETH (native, paid out by the native router) · minimum ${formatEther(q.minimumAmountOut)} ETH`);
+        if (q.feeAmount != null) lines.push(`Fee: ${formatUnits(q.feeAmount, baseDecimals)} base`);
+        const approvals = prepared.approvalRequirements.map((r) => `${formatUnits(r.amount, baseDecimals)} base to router ${short(r.spender)}`).join('; ');
+        lines.push(`Plan target: native router ${prepared.transaction.to} · approval required: ${approvals || 'none'}`);
+        lines.push(`Quoted at block ${q.quoteBlockNumber} · payer ${short(payer)}${account ? '' : ' (curve creator, read-only reference; connect your wallet to bind a plan to your account)'}`);
+      }
+    } catch (e) {
+      lines.push(`Native ETH path unavailable for this curve: ${e.shortMessage ?? e.message}`);
+      lines.push('Why: the SDK sends native ETH through the native router only for curves Ammora has registered in the native execution registry. This curve is not registered yet, so the SDK fails closed rather than falling back to a WETH trade.');
+    }
+    lines.push('', '— Protocol reference quote (curve quote asset) —');
+    try {
+      const q = await curve.quoteExactInput(amount, baseForQuote);
+      const inUnit = baseForQuote ? 'base' : 'WETH (protocol quote asset)';
+      const outUnit = baseForQuote ? 'WETH (protocol quote asset)' : 'base';
+      const inDec = baseForQuote ? baseDecimals : 18;
+      const outDec = baseForQuote ? 18 : baseDecimals;
+      lines.push(`Curve quote: ${formatUnits(amount, inDec)} ${inUnit} → ${formatUnits(q.amountOut, outDec)} ${outUnit}`);
+      lines.push(`Fee: ${formatUnits(q.fee, inDec)} ${inUnit} · unfilled remainder: ${formatUnits(q.amountLeft, inDec)} · quoted at block ${q.asOfBlock}`);
+      lines.push('Note: the curve custodies its quote asset internally as WETH. In a native trade the router wraps your ETH for the curve and unwraps the proceeds back to ETH, so you never hold or approve WETH yourself.');
+    } catch (e) {
+      lines.push('Reference quote failed: ' + (e.shortMessage ?? e.message));
+      lines.push('Note: graduated curves (status 3) no longer quote pre-graduation trades; pick an active curve from the launches list.');
+    }
+    out.textContent = lines.join('\n');
   } catch (e) {
-    out.textContent = 'Quote failed: ' + (e.shortMessage ?? e.message) +
-      '\nNote: graduated curves (status 3) no longer quote pre-graduation trades; pick an active curve from the launches list.';
+    out.textContent = 'Quote failed: ' + (e.shortMessage ?? e.message);
   }
 }
 
@@ -374,6 +443,11 @@ $('refreshLaunches').addEventListener('click', loadLaunches);
 $('planBtn').addEventListener('click', generatePlan);
 $('sendPlanBtn').addEventListener('click', sendPlanStep);
 $('quoteBtn').addEventListener('click', runQuote);
+$('direction').addEventListener('change', () => {
+  $('amtLabel').textContent = $('direction').value === 'sell'
+    ? 'Amount in (base token)'
+    : 'Amount in (ETH, native GIWA Sepolia)';
+});
 if (window.ethereum?.on) {
   window.ethereum.on('accountsChanged', () => location.reload());
   window.ethereum.on('chainChanged', () => location.reload());
