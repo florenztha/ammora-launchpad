@@ -1,0 +1,127 @@
+Atomic deployment nativeAsset: {
+ "kind": "WRAPPED_ERC20",
+ "nativeDecimals": 18,
+ "wrappedToken": "0x4200000000000000000000000000000000000006",
+ "wrappedTokenDecimals": 18,
+ "nativeRouter": "0xade9E6dEF440E05640ed07c4a701C238B9FB66a8"
+}
+Atomic deployment quoteAsset: {
+ "token": "0x4200000000000000000000000000000000000006",
+ "symbol": "WETH",
+ "decimals": 18
+}
+Auto-route native router: 0xade9E6dEF440E05640ed07c4a701C238B9FB66a8
+Auto-route execution registry (swap-client preflight): 0x3CDD7cC246Cc49aEa779E5E589Bd175251617626
+AMMORA_NATIVE_TOKEN is the SDK native sentinel: true
+Live block: 42061397n
+Recent launches found: [
+ {
+  "token": "0xBE604DDf3BAfB279F0D53F12c70cbe9a0d0cAb40",
+  "curve": "0xD4aB6c5Cf8fF58E129c2e5d7401017964aa1f02f",
+  "creator": "0x1C6fc66d6C059Db31BAea571FdCe8b18A3C9cBbf",
+  "configId": "67"
+ },
+ {
+  "token": "0x1aCc369390DC1D7609Da7BF04Ed494d53E844e66",
+  "curve": "0x080320Bb70f7fFC66fC289aA02FE6f46c595B528",
+  "creator": "0xBBbB077238f1F49d28176B3fBa6A760875C239b6",
+  "configId": "67"
+ },
+ {
+  "token": "0x7fbF0Cc64b70E2128887a0EACF35b71FE725D920",
+  "curve": "0x41bFB09eA2657148185159d0905D6CC43B18beD1",
+  "creator": "0x9479e85B06B6694FA01B238a4927a6ed2c6e69d1",
+  "configId": "67"
+ },
+ {
+  "token": "0x180a0BF9039aBE7b7A06b1B03D551cC808502069",
+  "curve": "0x6C6870170C601D48CF3Ee581C02DE5262E38e9e7",
+  "creator": "0x692a8cCF5ccD3Bd33C563BC7282d0Def0dCFB833",
+  "configId": "67"
+ },
+ {
+  "token": "0xeBF001a035669bca6115919dFb2aef65619C2eC6",
+  "curve": "0x6B9C77E553b348b193eF3eC15797DD7f1E3EC74e",
+  "creator": "0xE65AD21b53b2aed4460d116841139c19159f2E97",
+  "configId": "67"
+ },
+ {
+  "token": "0xFDea69A88142d81B498244D0D5871B70B1498b6b",
+  "curve": "0xAe572164c13BA1b46F413E48475fFdA8823b0A95",
+  "creator": "0x1C6fc66d6C059Db31BAea571FdCe8b18A3C9cBbf",
+  "configId": "67"
+ }
+]
+Active curve used below: 0x6B9C77E553b348b193eF3eC15797DD7f1E3EC74e
+Active curve state (quote token is the curve-internal asset): {
+ "status": 1,
+ "baseToken": "0xeBF001a035669bca6115919dFb2aef65619C2eC6",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "configId": "67",
+ "creator": "0xE65AD21b53b2aed4460d116841139c19159f2E97"
+}
+BASELINE curve quoteExactInput(0.01, buy): denominated in the curve quote token (WETH for every config on this registry): {
+ "amountIn": "505050505050507",
+ "amountOut": "1008064516144899",
+ "amountLeft": "9494949494949493",
+ "nextSqrtPrice": "13043817825229916424",
+ "fee": "5050505050506",
+ "asOfBlock": "42061398"
+}
+A. NATIVE BUY via AmmoraSwapClient failed: the selected Factory or pool is not enabled by the reviewed native execution registry [AMMORA_SDK_UNVERIFIED_DEPLOYMENT]
+A2. NATIVE SELL via AmmoraSwapClient failed: the selected Factory or pool is not enabled by the reviewed native execution registry [AMMORA_SDK_UNVERIFIED_DEPLOYMENT]
+B. Aggregation execution registry factoryConfig(auto-route factory): [
+ 0,
+ false,
+ "0x0000000000000000000000000000000000000000000000000000000000000000",
+ "0x0000000000000000000000000000000000000000",
+ "0x0000000000000000000000000000000000000000000000000000000000000000",
+ "0x0000000000000000000000000000000000000000000000000000000000000000",
+ "0x0000000000000000000000000000000000000000",
+ "0x0000000000000000000000000000000000000000000000000000000000000000",
+ 0
+]
+B. Aggregation execution registry individualPoolConfig(active curve): [
+ 0,
+ false,
+ "0x0000000000000000000000000000000000000000000000000000000000000000",
+ "0x0000000000000000000000000000000000000000",
+ "0x0000000000000000000000000000000000000000000000000000000000000000",
+ 0,
+ "0x0000000000000000000000000000000000000000",
+ "0x0000000000000000000000000000000000000000"
+]
+B. Route quote with native ETH (AMMORA_NATIVE_TOKEN) failed: no reviewed exact-input route is currently available [AMMORA_SDK_ROUTE_UNAVAILABLE]
+B. Route quote with WETH (contrast) failed: no reviewed exact-input route is currently available [AMMORA_SDK_ROUTE_UNAVAILABLE]
+C. verifyAmmoraAlcAggregationPool failed: The contract function "resolvePool" reverted.
+C. ALC aggregation quote with AMMORA_NATIVE_TOKEN failed: ALC input token mismatch
+D. Planner target config: {
+ "id": "78",
+ "quoteToken": "0x4200000000000000000000000000000000000006",
+ "tokenDecimals": 9
+}
+D. planExistingConfigAtomicFirstBuy result (the only first-buy plan the SDK produces): {
+ "status": "APPROVAL_REQUIRED",
+ "operation": "EXISTING_CONFIG_ATOMIC_FIRST_BUY",
+ "transactionKind": "ERC20_APPROVAL",
+ "totalQuoteAmountRaw": "10000000000000000",
+ "totalFirstBuyFormatted": "0.01 (quote asset = WETH 0x4200000000000000000000000000000000000006)",
+ "approvalRequirements": [
+  {
+   "token": "0x4200000000000000000000000000000000000006",
+   "decimals": 18,
+   "spender": "0x1a19a3b0e69b33db3a2f9b2487866b4be04dd451",
+   "exactAmountRaw": "10000000000000000",
+   "currentAllowanceRaw": "0"
+  }
+ ],
+ "approvalTokenIsWETH": true,
+ "wrapPrerequisites": [],
+ "transactionValue": "0",
+ "transactionTo": "0x4200000000000000000000000000000000000006"
+}
+VERDICT:
+- Atomic first buy: WETH-only in SDK 0.3.9 (planner has no native parameter; docs: "WETH funds the first buy", "neither planner wraps automatically").
+- Direct curve quote: denominated in the curve quote token (WETH on every config of this registry).
+- SDK native-router / aggregation native paths exist but are gated on Ammora-side execution-registry registrations that are absent for this factory and its curves today (see A/B/C outcomes above).
+DONE
