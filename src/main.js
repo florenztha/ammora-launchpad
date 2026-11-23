@@ -1,6 +1,11 @@
 // Florenz Launchpad — a static launchpad front-end built on the Ammora SDK 0.3.9.
 // Reads and plan generation run keylessly against GIWA Sepolia; sending is done
 // only through the visitor's own connected wallet. No keys exist in this bundle.
+//
+// Layout: the main page is a simple two-card flow (Create Token, Buy / Sell)
+// written in plain language. Everything technical from the original UI (full
+// deployment catalog, config list, raw planner, raw quotes, raw errors) lives
+// in the collapsed "Advanced" section and runs on the exact same SDK calls.
 import {
   giwaSepoliaAutoRouteDeployment,
   giwaSepoliaTokenLockDeployment,
@@ -57,7 +62,24 @@ const fmtInt = (raw, decimals) => {
 };
 const statusLabel = (s) => (s === 1 ? ['Active', 'active'] : s === 3 ? ['Graduated', 'grad'] : [`Status ${s}`, '']);
 
-// ---------------------------------------------------------------- network panel
+// Raw protocol errors never reach the main UI. They are appended here, in the
+// Advanced section, while the main flow shows a plain-language sentence.
+function logRaw(context, e) {
+  const box = $('rawLog');
+  if (!box) return;
+  const line = `[${new Date().toLocaleTimeString()}] ${context}: ${e?.shortMessage ?? e?.message ?? String(e)}`;
+  box.textContent = box.textContent ? `${box.textContent}\n${line}` : line;
+}
+function plainError(e) {
+  const m = `${e?.shortMessage ?? ''} ${e?.message ?? ''}`;
+  if (/user rejected|user denied|rejected the request/i.test(m)) return 'You cancelled the request in your wallet. Nothing was sent.';
+  if (/insufficient funds/i.test(m)) return 'Your wallet does not have enough balance for this. Nothing was sent.';
+  return 'Something went wrong. Nothing was completed; the technical details are in the Advanced section below.';
+}
+
+// ---------------------------------------------------------------- network
+// One code path feeds both the compact status line in the header and the full
+// catalog table in Advanced.
 async function loadNetwork() {
   const rows = $('netRows');
   try {
@@ -67,6 +89,7 @@ async function loadNetwork() {
       publicClient.readContract({ address: REGISTRY, abi: ammoraLaunchConfigRegistryV4Abi, functionName: 'nextConfigId' }),
     ]);
     const lock = giwaSepoliaTokenLockDeployment;
+    $('statusLine').textContent = `GIWA Sepolia testnet · Block ${block.number}`;
     rows.innerHTML = [
       ['Network', `GIWA Sepolia · chain ${chainId} · testnet`],
       ['Latest block', String(block.number)],
@@ -82,11 +105,12 @@ async function loadNetwork() {
       ['Configs registered', `${nextId - 1n} (next id ${nextId})`],
     ].map(([k, v]) => `<div class="row"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('');
   } catch (e) {
+    $('statusLine').textContent = 'Network unavailable, retrying…';
     rows.innerHTML = `<div class="row"><span class="k">Status</span><span class="v err">${esc(e.shortMessage ?? e.message)}</span></div>`;
   }
 }
 
-// ---------------------------------------------------------------- config loading
+// ---------------------------------------------------------------- configs
 let qualifiedConfigs = [];
 async function loadConfigs() {
   const sel = $('cfgSelect');
@@ -123,10 +147,49 @@ async function loadConfigs() {
     sel.value = String(found[found.length - 1].id);
     $('cfgNote').textContent =
       `${found.length} qualified templates found. Config #6 is excluded: the Ammora graduation readiness notice quarantines it for new launches.`;
+    updatePresetNote();
   } catch (e) {
     sel.innerHTML = '<option value="">failed to load configs</option>';
     $('cfgNote').textContent = e.shortMessage ?? e.message;
   }
+}
+
+// Config auto-pick rule for the simple Create Token flow (no dropdown there):
+// the visitor's requested total supply picks the preset. Among the qualified
+// configs, choose the one whose total supply is closest to the requested
+// supply on a log scale (supplies span orders of magnitude). Config 78, the
+// config proven end-to-end in evidence/, wins ties and is also the default
+// when no supply is entered; if it is ever not qualified, fall back to the
+// newest qualified config.
+const PROVEN_CONFIG_ID = 78n;
+function pickConfig(supplyWhole) {
+  if (!qualifiedConfigs.length) return null;
+  const proven = qualifiedConfigs.find((c) => c.id === PROVEN_CONFIG_ID) ?? null;
+  if (supplyWhole == null || !(supplyWhole > 0)) {
+    return proven ?? qualifiedConfigs[qualifiedConfigs.length - 1];
+  }
+  const target = Math.log10(supplyWhole);
+  let best = null;
+  let bestDist = Infinity;
+  for (const c of qualifiedConfigs) {
+    const s = Number(formatUnits(c.cfg.totalSupply, c.cfg.tokenDecimals));
+    const d = Math.abs(Math.log10(Math.max(s, 1)) - target);
+    if (d < bestDist - 1e-9 || (Math.abs(d - bestDist) <= 1e-9 && c.id === PROVEN_CONFIG_ID)) {
+      best = c;
+      bestDist = d;
+    }
+  }
+  return best ?? proven ?? qualifiedConfigs[qualifiedConfigs.length - 1];
+}
+function requestedSupply() {
+  const v = parseFloat($('ctSupply').value);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+function updatePresetNote() {
+  const entry = pickConfig(requestedSupply());
+  if (!entry) return;
+  $('ctPresetNote').textContent =
+    `Closest available preset: ${fmtInt(entry.cfg.totalSupply, entry.cfg.tokenDecimals)} tokens total supply. It is selected automatically.`;
 }
 
 // ---------------------------------------------------------------- launches scan
@@ -139,9 +202,14 @@ function parseMetaName(uri) {
   return null;
 }
 
+let tradeTokens = []; // { token, curve, configId, name, symbol, status }
+let selectedTrade = null;
+
 async function loadLaunches() {
   const list = $('launchList');
+  const tradeList = $('tradeList');
   list.innerHTML = '<p class="sub">scanning…</p>';
+  tradeList.innerHTML = '<p class="sub">loading tokens…</p>';
   try {
     const latest = await publicClient.getBlockNumber();
     const event = ammoraLaunchFactoryV4Abi.find((x) => x.type === 'event' && x.name === 'LaunchCreated');
@@ -154,8 +222,13 @@ async function loadLaunches() {
       if (chunk.length) break;
     }
     const recent = logs.slice(-8).reverse();
-    if (!recent.length) { list.innerHTML = '<p class="sub">No launches found in the scanned range.</p>'; return; }
+    if (!recent.length) {
+      list.innerHTML = '<p class="sub">No launches found in the scanned range.</p>';
+      tradeList.innerHTML = '<p class="sub">No tokens found yet.</p>';
+      return;
+    }
     const items = [];
+    tradeTokens = [];
     let firstActiveCurve = null;
     for (const log of recent) {
       const a = log.args;
@@ -167,6 +240,9 @@ async function loadLaunches() {
       } catch { /* state read is best-effort for the list */ }
       if (status === 1 && !firstActiveCurve) firstActiveCurve = a.curve;
       const [label, cls] = status === null ? ['Unknown', ''] : statusLabel(status);
+      const name = meta ? meta.name : 'Token ' + short(a.token);
+      const symbol = meta ? meta.symbol : '';
+      tradeTokens.push({ token: a.token, curve: a.curve, configId: a.configId, name, symbol, status });
       items.push(`<div class="launch">
         <span class="t">${esc(meta ? `${meta.name} (${meta.symbol})` : 'Token ' + short(a.token))}</span>
         <span class="pill ${cls}">${esc(label)}</span>
@@ -174,10 +250,43 @@ async function loadLaunches() {
       </div>`);
     }
     list.innerHTML = items.join('');
+    renderTradeList();
     if (firstActiveCurve && !$('curveAddr').value) $('curveAddr').value = firstActiveCurve;
+    const firstActive = tradeTokens.find((t) => t.status === 1) ?? tradeTokens[0];
+    if (firstActive && !selectedTrade) selectTrade(firstActive, false);
+    else if (selectedTrade) refreshTradeEstimate();
   } catch (e) {
     list.innerHTML = `<p class="sub err">${esc(e.shortMessage ?? e.message)}</p>`;
+    tradeList.innerHTML = '<p class="sub">Could not load tokens. Details are in the Advanced section below.</p>';
+    logRaw('loadLaunches', e);
   }
+}
+
+function renderTradeList() {
+  const tradeList = $('tradeList');
+  tradeList.innerHTML = '';
+  for (const t of tradeTokens) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tokenitem' + (selectedTrade && selectedTrade.curve === t.curve ? ' sel' : '');
+    const left = document.createElement('span');
+    left.textContent = t.symbol ? `${t.name} (${t.symbol})` : t.name;
+    const right = document.createElement('span');
+    right.className = 'pill ' + (t.status === 1 ? 'active' : t.status === 3 ? 'grad' : '');
+    right.textContent = t.status === 1 ? 'Trading open' : t.status === 3 ? 'Graduated' : 'Unknown';
+    b.appendChild(left);
+    b.appendChild(right);
+    b.addEventListener('click', () => selectTrade(t, true));
+    tradeList.appendChild(b);
+  }
+}
+
+function selectTrade(t, userPicked) {
+  selectedTrade = t;
+  $('curveAddr').value = t.curve; // keep the Advanced quote panel in sync
+  renderTradeList();
+  $('tradeMsg').textContent = '';
+  if (userPicked || true) refreshTradeEstimate();
 }
 
 // ---------------------------------------------------------------- wallet
@@ -290,8 +399,10 @@ function onChainChanged(chainIdHex) {
   if (parseInt(chainIdHex, 16) !== 91342) {
     $('walletAddr').innerHTML = '<span class="err">Wrong network: switch your wallet to GIWA Sepolia (chain 91342).</span>';
     $('planBtn').disabled = true;
+    $('ctCreateBtn').disabled = true;
   } else {
     $('planBtn').disabled = false;
+    $('ctCreateBtn').disabled = false;
     showWallet();
   }
 }
@@ -346,7 +457,9 @@ async function connectWallet(detail) {
     bindProviderEvents(provider);
     btn.textContent = 'Disconnect';
     $('planBtn').disabled = false;
+    $('ctCreateBtn').disabled = false;
     await showWallet();
+    refreshTradeEstimate();
   } catch (e) {
     $('walletAddr').innerHTML = `<span class="err">${esc(e.shortMessage ?? e.message)}</span>`;
   } finally {
@@ -364,6 +477,7 @@ async function disconnectWallet() {
   $('walletAddr').textContent = '';
   $('wethBal').textContent = '';
   $('planBtn').disabled = true;
+  $('ctCreateBtn').disabled = true;
   $('sendPlanBtn').style.display = 'none';
   // Best effort: ask the wallet to revoke the eth_accounts permission so the
   // next connect re-prompts (MetaMask supports wallet_revokePermissions;
@@ -380,17 +494,134 @@ async function showWallet() {
       publicClient.readContract({ address: WETH, abi: erc20Abi, functionName: 'balanceOf', args: [account] }),
     ]);
     $('walletAddr').textContent = `${walletName ? walletName + ' · ' : ''}${short(account)} · ${formatEther(eth)} ETH`;
-    // The WETH balance is shown only inside the Create panel: the SDK's atomic
-    // first buy is the one step that still settles in the protocol quote asset.
+    // The WETH balance is shown only inside the Advanced create panel: the
+    // SDK's atomic first buy is the one step that still settles in the
+    // protocol quote asset.
     $('wethBal').textContent = `Your WETH balance for the first-buy step below: ${formatEther(weth)} WETH. Your native ETH pays gas and the pool creation fee.`;
   } catch {
     $('walletAddr').textContent = `${walletName ? walletName + ' · ' : ''}${short(account)}`;
   }
 }
 
-// ---------------------------------------------------------------- create-launch plan
+// ---------------------------------------------------------------- launch planner (shared)
+// One planner code path serves both the simple Create Token flow and the raw
+// planner in Advanced. The SDK machinery is identical; only the presentation
+// differs.
 let currentPlan = null;
 
+async function buildPlan(entry, { name, symbol, metadataURI, firstBuyRaw, minOut }) {
+  const block = await publicClient.getBlock();
+  const context = await verifyAmmoraPortableDeploymentAtBlock(publicClient, giwaSepoliaAtomicLaunchDeployment, block.number);
+  const planner = new AmmoraPortableLifecyclePlanner(context, giwaSepoliaAtomicLaunchTargets);
+  let maxFee = (block.baseFeePerGas ?? 1000000000n) * 3n;
+  try { const fees = await publicClient.estimateFeesPerGas(); if (fees.maxFeePerGas) maxFee = fees.maxFeePerGas; } catch { /* fallback above */ }
+  return planner.planExistingConfigAtomicFirstBuy({
+    account,
+    configId: entry.id,
+    expectedConfigHash: entry.hash,
+    launch: {
+      name, symbol,
+      metadataURI,
+      creatorMetadataURI: '',
+      tokenDecimals: entry.cfg.tokenDecimals,
+    },
+    firstBuys: [{ includedQuoteAmountRaw: firstBuyRaw, minimumBaseAmountOutRaw: minOut, allowPartialFill: false, recipient: account }],
+    deadline: BigInt(Math.floor(Date.now() / 1000) + 1800),
+    gas: { maxFeePerGasNativeRaw: maxFee, safetyMarginBps: 2000n },
+  });
+}
+
+async function sendPlanTransaction(plan) {
+  const hash = await walletClient.sendTransaction({
+    account,
+    chain: giwaSepolia,
+    to: plan.transaction.to,
+    data: plan.transaction.data,
+    value: plan.transaction.value ?? 0n,
+    gas: plan.estimatedGasUnits ? (plan.estimatedGasUnits * 130n) / 100n : undefined,
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return { hash, receipt };
+}
+
+// -------------------------------------------------- simple Create Token flow
+function setSteps(defs) {
+  // defs: [{ label, state: 'todo' | 'doing' | 'done' }]
+  $('ctSteps').innerHTML = defs.map((d) => {
+    const mark = d.state === 'done' ? '✓' : d.state === 'doing' ? '…' : '·';
+    return `<li class="${esc(d.state)}"><span class="st">${mark}</span><span>${esc(d.label)}</span></li>`;
+  }).join('');
+}
+
+async function createTokenSimple() {
+  const msg = $('ctMsg');
+  const btn = $('ctCreateBtn');
+  msg.textContent = '';
+  msg.className = 'msg';
+  if (!account || !walletClient) { msg.textContent = 'Connect your wallet first, then create your token.'; return; }
+  const name = $('ctName').value.trim();
+  const symbol = $('ctSymbol').value.trim();
+  if (!name || !symbol) { msg.textContent = 'Give your token a name and a symbol first.'; return; }
+  let firstBuyRaw;
+  try { firstBuyRaw = parseEther($('ctFirstBuy').value || '0'); } catch { msg.textContent = 'The first buy amount is not a valid number.'; return; }
+  if (firstBuyRaw <= 0n) { msg.textContent = 'Enter a first buy amount above zero. The first buy is part of every launch.'; return; }
+  const entry = pickConfig(requestedSupply());
+  if (!entry) { msg.textContent = 'Launch presets are still loading. Wait a few seconds and try again.'; return; }
+
+  const steps = [
+    { label: 'Preparing your launch', state: 'doing' },
+    { label: 'Approval in your wallet', state: 'todo' },
+    { label: 'Sending the launch transaction', state: 'todo' },
+    { label: 'Done', state: 'todo' },
+  ];
+  btn.disabled = true;
+  try {
+    setSteps(steps);
+    let plan = await buildPlan(entry, { name, symbol, metadataURI: '', firstBuyRaw, minOut: 1n });
+    if (plan.status === 'APPROVAL_REQUIRED') {
+      steps[0].state = 'done';
+      steps[1].state = 'doing';
+      steps[1].label = 'Waiting for approval in your wallet';
+      setSteps(steps);
+      await sendPlanTransaction(plan);
+      steps[1].state = 'done';
+      steps[1].label = 'Approval confirmed';
+      steps[2].state = 'doing';
+      setSteps(steps);
+      plan = await buildPlan(entry, { name, symbol, metadataURI: '', firstBuyRaw, minOut: 1n });
+    } else {
+      steps[0].state = 'done';
+      steps[1].state = 'done';
+      steps[1].label = 'No approval needed';
+      steps[2].state = 'doing';
+      setSteps(steps);
+    }
+    const { hash, receipt } = await sendPlanTransaction(plan);
+    steps[2].state = 'done';
+    if (receipt.status === 'success') {
+      steps[3].state = 'done';
+      steps[3].label = `Done: ${name} (${symbol}) is created`;
+      setSteps(steps);
+      msg.innerHTML = `Your token is live on the testnet. Transaction: <a href="${EXPLORER}/tx/${esc(hash)}" target="_blank" rel="noopener">${esc(short(hash))}</a>. It will appear in the Buy / Sell list after a rescan.`;
+      msg.className = 'msg ok';
+      loadLaunches();
+    } else {
+      setSteps(steps);
+      msg.textContent = 'The transaction was sent but did not succeed on chain. The technical details are in the Advanced section below.';
+      logRaw('createToken receipt', new Error(`tx ${hash} reverted in block ${receipt.blockNumber}`));
+    }
+    showWallet();
+  } catch (e) {
+    setSteps([]);
+    msg.textContent = plainError(e);
+    msg.className = 'msg err';
+    logRaw('createToken', e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// -------------------------------------------------- Advanced raw planner
 async function generatePlan() {
   const out = $('planOut');
   const sendBtn = $('sendPlanBtn');
@@ -411,24 +642,10 @@ async function generatePlan() {
 
   out.textContent = 'Verifying deployment and simulating plan against the live chain…';
   try {
-    const block = await publicClient.getBlock();
-    const context = await verifyAmmoraPortableDeploymentAtBlock(publicClient, giwaSepoliaAtomicLaunchDeployment, block.number);
-    const planner = new AmmoraPortableLifecyclePlanner(context, giwaSepoliaAtomicLaunchTargets);
-    let maxFee = (block.baseFeePerGas ?? 1000000000n) * 3n;
-    try { const fees = await publicClient.estimateFeesPerGas(); if (fees.maxFeePerGas) maxFee = fees.maxFeePerGas; } catch { /* fallback above */ }
-    const plan = await planner.planExistingConfigAtomicFirstBuy({
-      account,
-      configId: entry.id,
-      expectedConfigHash: entry.hash,
-      launch: {
-        name, symbol,
-        metadataURI: $('tokMeta').value.trim(),
-        creatorMetadataURI: '',
-        tokenDecimals: entry.cfg.tokenDecimals,
-      },
-      firstBuys: [{ includedQuoteAmountRaw: firstBuyRaw, minimumBaseAmountOutRaw: minOut, allowPartialFill: false, recipient: account }],
-      deadline: BigInt(Math.floor(Date.now() / 1000) + 1800),
-      gas: { maxFeePerGasNativeRaw: maxFee, safetyMarginBps: 2000n },
+    const plan = await buildPlan(entry, {
+      name, symbol,
+      metadataURI: $('tokMeta').value.trim(),
+      firstBuyRaw, minOut,
     });
     currentPlan = plan;
     const lines = [
@@ -465,16 +682,9 @@ async function sendPlanStep() {
   try {
     btn.disabled = true;
     const plan = currentPlan;
-    const hash = await walletClient.sendTransaction({
-      account,
-      chain: giwaSepolia,
-      to: plan.transaction.to,
-      data: plan.transaction.data,
-      value: plan.transaction.value ?? 0n,
-      gas: plan.estimatedGasUnits ? (plan.estimatedGasUnits * 130n) / 100n : undefined,
-    });
-    out.textContent += `\n\nSubmitted: ${hash}\nExplorer: ${EXPLORER}/tx/${hash}\nWaiting for receipt…`;
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    out.textContent += '\n\nSending…';
+    const { hash, receipt } = await sendPlanTransaction(plan);
+    out.textContent += `\nSubmitted: ${hash}\nExplorer: ${EXPLORER}/tx/${hash}`;
     out.textContent += `\nReceipt: status ${receipt.status}, block ${receipt.blockNumber}.`;
     if (plan.status === 'APPROVAL_REQUIRED') {
       out.textContent += '\nApproval confirmed. Generate the plan again to prepare the launch transaction.';
@@ -494,13 +704,13 @@ async function sendPlanStep() {
   }
 }
 
-// ---------------------------------------------------------------- quote panel
+// ---------------------------------------------------------------- swap client (shared)
 // Trading on a launch curve is native-ETH based. The SDK's AmmoraSwapClient
 // plans the trade through the deployment's native router: a buy sends the
 // amount as native transaction value (no ERC-20 approval), a sell pays native
 // ETH back out. The router wraps/unwraps internally; the curve itself keeps
 // custody of its quote asset (WETH), which is why the curve's own reference
-// quote below is denominated in that protocol-internal asset.
+// quote is denominated in that protocol-internal asset.
 let swapClientPromise = null;
 function getSwapClient() {
   if (!swapClientPromise) {
@@ -511,6 +721,188 @@ function getSwapClient() {
   return swapClientPromise;
 }
 
+// -------------------------------------------------- simple Buy / Sell flow
+let tradeState = null; // { state, baseDecimals }
+let tradeNative = { buy: null, sell: null, buyBlocked: false, sellBlocked: false };
+let estimateTimer = null;
+
+async function computeTradeSide(dir, curve, state, baseDecimals, amount) {
+  // Returns { native: prepared|null, nativeError, fallbackOut: bigint|null }.
+  const payer = account ?? state.creator;
+  const swaps = await getSwapClient();
+  let native = null;
+  let nativeError = null;
+  try {
+    if (dir === 'buy') {
+      native = await swaps.prepareExactIn({
+        model: 'dbc', pool: curve, tokenIn: WETH, inputAsset: 'native',
+        amountIn: amount, payer, recipient: payer, slippageBps: 100,
+      });
+    } else {
+      native = await swaps.prepareExactIn({
+        model: 'dbc', pool: curve, tokenIn: state.baseToken, outputAsset: 'native',
+        amountIn: amount, payer, recipient: payer, slippageBps: 100,
+      });
+    }
+  } catch (e) {
+    nativeError = e;
+  }
+  let fallbackOut = null;
+  if (!native) {
+    try {
+      const q = await curve.quoteExactInput(amount, dir === 'sell');
+      fallbackOut = q.amountOut;
+    } catch { /* graduated curves revert here; the caller presents that plainly */ }
+  }
+  return { native, nativeError, fallbackOut };
+}
+
+async function refreshTradeEstimate() {
+  const box = $('tradeEstimate');
+  const buyBtn = $('tradeBuyBtn');
+  const sellBtn = $('tradeSellBtn');
+  tradeNative = { buy: null, sell: null, buyBlocked: false, sellBlocked: false };
+  buyBtn.disabled = true;
+  sellBtn.disabled = true;
+  if (!selectedTrade) { box.innerHTML = ''; return; }
+  const t = selectedTrade;
+  if (t.status === 3) {
+    box.innerHTML = '<div class="row"><span class="k">This token has graduated. Trading on this page is closed for it.</span></div>';
+    return;
+  }
+  if (t.status !== 1) {
+    box.innerHTML = '<div class="row"><span class="k">This token\'s status could not be read, so trading is unavailable for it.</span></div>';
+    return;
+  }
+  const amtStr = $('tradeAmt').value || '0';
+  let buyAmount;
+  let sellAmount;
+  try {
+    buyAmount = parseEther(amtStr);
+  } catch { box.innerHTML = '<div class="row"><span class="k">Enter a valid amount.</span></div>'; return; }
+  box.innerHTML = '<div class="row"><span class="k">Estimating…</span></div>';
+  try {
+    const curve = new AmmoraV4LaunchCurveClient(publicClient, t.curve, CORE);
+    const state = await curve.getState();
+    const baseDecimals = await publicClient.readContract({ address: state.baseToken, abi: erc20Abi, functionName: 'decimals' });
+    tradeState = { state, baseDecimals };
+    try { sellAmount = parseUnits(amtStr, baseDecimals); } catch { sellAmount = 0n; }
+    const sym = t.symbol || 'tokens';
+    const rows = [];
+    let blocked = false;
+    if (buyAmount > 0n) {
+      const r = await computeTradeSide('buy', curve, state, baseDecimals, buyAmount);
+      if (r.native) {
+        tradeNative.buy = r.native;
+        rows.push(`<div class="row"><span class="k">Buy with ${esc(formatEther(buyAmount))} ETH</span><span class="v">≈ ${esc(fmtInt(r.native.quote.expectedAmountOut, baseDecimals))} ${esc(sym)}</span></div>`);
+      } else {
+        tradeNative.buyBlocked = true;
+        blocked = true;
+        logRaw('native buy quote', r.nativeError);
+        rows.push(r.fallbackOut != null
+          ? `<div class="row"><span class="k">Buy with ${esc(formatEther(buyAmount))} ETH</span><span class="v">≈ ${esc(fmtInt(r.fallbackOut, baseDecimals))} ${esc(sym)} (estimate)</span></div>`
+          : `<div class="row"><span class="k">Buy estimate unavailable right now.</span></div>`);
+      }
+    }
+    if (sellAmount > 0n) {
+      const r = await computeTradeSide('sell', curve, state, baseDecimals, sellAmount);
+      if (r.native) {
+        tradeNative.sell = r.native;
+        rows.push(`<div class="row"><span class="k">Sell ${esc(fmtInt(sellAmount, baseDecimals))} ${esc(sym)}</span><span class="v">≈ ${esc(formatEther(r.native.quote.expectedAmountOut))} ETH</span></div>`);
+      } else {
+        tradeNative.sellBlocked = true;
+        blocked = true;
+        logRaw('native sell quote', r.nativeError);
+        rows.push(r.fallbackOut != null
+          ? `<div class="row"><span class="k">Sell ${esc(fmtInt(sellAmount, baseDecimals))} ${esc(sym)}</span><span class="v">≈ ${esc(formatEther(r.fallbackOut))} ETH value (estimate)</span></div>`
+          : `<div class="row"><span class="k">Sell estimate unavailable right now.</span></div>`);
+      }
+    }
+    if (!rows.length) rows.push('<div class="row"><span class="k">Enter an amount to see an estimate.</span></div>');
+    if (blocked) {
+      rows.push('<div class="row"><span class="k">Trading for this token currently settles in the protocol\'s quote asset (WETH), so one-click ETH trading is not available for it yet. The estimate above comes from the token\'s own price curve.</span></div>');
+    }
+    box.innerHTML = rows.join('');
+    buyBtn.disabled = !(tradeNative.buy && account);
+    sellBtn.disabled = !(tradeNative.sell && account);
+    if (!account && (tradeNative.buy || tradeNative.sell)) {
+      box.innerHTML += '<div class="row"><span class="k">Connect your wallet to buy or sell.</span></div>';
+    }
+  } catch (e) {
+    box.innerHTML = '<div class="row"><span class="k">Could not estimate right now. The technical details are in the Advanced section below.</span></div>';
+    logRaw('trade estimate', e);
+  }
+}
+
+async function executeTrade(dir) {
+  const msg = $('tradeMsg');
+  msg.textContent = '';
+  msg.className = 'msg';
+  if (!account || !walletClient) { msg.textContent = 'Connect your wallet first.'; return; }
+  if (!selectedTrade || !tradeState) { msg.textContent = 'Pick a token first.'; return; }
+  const btn = dir === 'buy' ? $('tradeBuyBtn') : $('tradeSellBtn');
+  btn.disabled = true;
+  try {
+    msg.textContent = 'Preparing…';
+    // Re-prepare bound to the connected account so the plan is sendable.
+    const curve = new AmmoraV4LaunchCurveClient(publicClient, selectedTrade.curve, CORE);
+    const amtStr = $('tradeAmt').value || '0';
+    const amount = dir === 'buy' ? parseEther(amtStr) : parseUnits(amtStr, tradeState.baseDecimals);
+    if (amount <= 0n) { msg.textContent = 'Enter an amount above zero.'; return; }
+    const r = await computeTradeSide(dir, curve, tradeState.state, tradeState.baseDecimals, amount);
+    if (!r.native) {
+      msg.textContent = 'Trading for this token currently settles in the protocol\'s quote asset (WETH), so one-click ETH trading is not available for it yet.';
+      logRaw(`native ${dir} prepare`, r.nativeError);
+      return;
+    }
+    const prepared = r.native;
+    // Approvals first, if the plan asks for any (a sell approves the token to
+    // the native router; a native buy needs none).
+    for (const req of prepared.approvalRequirements ?? []) {
+      msg.textContent = 'Waiting for approval in your wallet…';
+      const tokenAddr = dir === 'sell' ? tradeState.state.baseToken : req.token ?? WETH;
+      const amountRaw = req.exactAmountRaw ?? req.amount;
+      const hash = await walletClient.writeContract({
+        account, chain: giwaSepolia,
+        address: tokenAddr, abi: erc20Abi, functionName: 'approve',
+        args: [req.spender, amountRaw],
+      });
+      await publicClient.waitForTransactionReceipt({ hash });
+    }
+    msg.textContent = 'Sending the transaction…';
+    const hash = await walletClient.sendTransaction({
+      account,
+      chain: giwaSepolia,
+      to: prepared.transaction.to,
+      data: prepared.transaction.data,
+      value: prepared.transaction.value ?? 0n,
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status === 'success') {
+      msg.innerHTML = `Done. Transaction: <a href="${EXPLORER}/tx/${esc(hash)}" target="_blank" rel="noopener">${esc(short(hash))}</a>.`;
+      msg.className = 'msg ok';
+    } else {
+      msg.textContent = 'The transaction was sent but did not succeed on chain. The technical details are in the Advanced section below.';
+      logRaw('trade receipt', new Error(`tx ${hash} reverted in block ${receipt.blockNumber}`));
+    }
+    showWallet();
+    refreshTradeEstimate();
+  } catch (e) {
+    msg.textContent = plainError(e);
+    msg.className = 'msg err';
+    logRaw(`trade ${dir}`, e);
+  } finally {
+    btn.disabled = !(dir === 'buy' ? tradeNative.buy : tradeNative.sell) || !account;
+  }
+}
+
+// -------------------------------------------------- Advanced raw quote panel
+// Trading on a launch curve is native-ETH based. The SDK's AmmoraSwapClient
+// plans the trade through the deployment's native router: a buy sends the
+// amount as native transaction value (no ERC-20 approval), a sell pays native
+// ETH back out. The router wraps/unwraps internally; the curve itself keeps
+// custody of its quote asset (WETH), which is why the curve's own reference
+// quote below is denominated in that protocol-internal asset.
 async function runQuote() {
   const out = $('quoteOut');
   const curveAddr = $('curveAddr').value.trim();
@@ -594,6 +986,14 @@ $('refreshLaunches').addEventListener('click', loadLaunches);
 $('planBtn').addEventListener('click', generatePlan);
 $('sendPlanBtn').addEventListener('click', sendPlanStep);
 $('quoteBtn').addEventListener('click', runQuote);
+$('ctCreateBtn').addEventListener('click', createTokenSimple);
+$('ctSupply').addEventListener('input', updatePresetNote);
+$('tradeBuyBtn').addEventListener('click', () => executeTrade('buy'));
+$('tradeSellBtn').addEventListener('click', () => executeTrade('sell'));
+$('tradeAmt').addEventListener('input', () => {
+  clearTimeout(estimateTimer);
+  estimateTimer = setTimeout(refreshTradeEstimate, 450);
+});
 $('direction').addEventListener('change', () => {
   $('amtLabel').textContent = $('direction').value === 'sell'
     ? 'Amount in (base token)'
